@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex align-items-center justify-content-between mb-5">
+        <div>
+            <span class="badge bg-secondary mb-2">Administrative Security</span>
+            <h2 class="fw-bold m-0"><i data-lucide="shield-alert" class="me-2 text-danger"></i>Security & Forensic Audit Logs</h2>
+        </div>
+        <div class="text-end">
+            <div class="text-muted small">System Integrity: <span class="text-success fw-bold">ACTIVE</span></div>
+            <div class="text-muted small">Ledger Nodes: <span class="text-primary fw-bold">SYNCHRONIZED</span></div>
+        </div>
+    </div>
+
+    <!-- Fraud Alert Log -->
+    <div class="card border-0 shadow-sm mb-5">
+        <div class="card-header bg-white border-bottom p-4">
+            <h5 class="fw-bold m-0"><i data-lucide="alert-triangle" class="me-2 text-warning"></i>Neural Fraud Detection Alerts</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle m-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Timestamp</th>
+                        <th>Associated Identity</th>
+                        <th>Detection Signature</th>
+                        <th>Node IP Address</th>
+                        <th class="text-center">Action Taken</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in fraud_logs %}
+                    <tr>
+                        <td class="ps-4 small text-muted">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i data-lucide="user" class="me-2 text-secondary" size="16"></i>
+                                <span>{{ log.org_id if log.org_id else 'ANONYMOUS_PROBE' }}</span>
+                            </div>
+                        </td>
+                        <td><span class="text-danger fw-bold small">{{ log.reason }}</span></td>
+                        <td class="font-monospace small opacity-75">{{ log.ip_address }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-warning text-dark border border-warning">ISOLATED & LOGGED</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">No high-risk security threats detected in the current cycle.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Forensic Segregation by Election -->
+    {% for election in elections %}
+    <div class="mb-5">
+        <div class="d-flex align-items-center mb-3">
+            <h4 class="fw-bold m-0 text-primary">Deployment: {{ election.title }}</h4>
+            <span class="badge bg-light text-primary border ms-3">Phase {{ election.phase }}</span>
+        </div>
+        
+        <div class="row g-4">
+            <!-- Candidate Audit for this Election -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h6 class="fw-bold m-0"><i data-lucide="users" class="me-2" size="18"></i>Candidate Register</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for cand in election.candidates %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center small">
+                                <div>
+                                    <div class="fw-bold">{{ cand.name }}</div>
+                                    <div class="text-muted">{{ cand.party_name if cand.party_name else 'Independent' }}</div>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill">ID: {{ cand.id }}</span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item text-muted italic p-4 text-center">No participants registered.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ledger Persistence for this Election -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h6 class="fw-bold m-0"><i data-lucide="database" class="me-2 text-primary" size="18"></i>Ledger Persistence (Election #{{ election.id }})</h6>
+                    </div>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover align-middle m-0 small">
+                            <thead class="bg-light sticky-top">
+                                <tr>
+                                    <th class="ps-4">Timestamp</th>
+                                    <th>Identity Hash</th>
+                                    <th>Persistence Key (PGK)</th>
+                                    <th class="text-center">Integrity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set found_records = false %}
+                                {% for record in audit_keys %}
+                                    {% if record.election_id == election.id %}
+                                    {% set found_records = true %}
+                                    <tr>
+                                        <td class="ps-4 text-muted">{{ record.timestamp.strftime('%H:%M:%S') }}</td>
+                                        <td class="font-monospace opacity-50">{{ record.user_hash[:16] }}...</td>
+                                        <td><span class="badge bg-primary text-white font-monospace">{{ record.unique_key }}</span></td>
+                                        <td class="text-center text-success"><i data-lucide="check-circle" size="14"></i> VERIFIED</td>
+                                    </tr>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if not found_records %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted italic">No ledger entries recorded for this deployment.</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

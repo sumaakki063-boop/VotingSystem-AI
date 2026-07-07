@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-lg-6 col-md-8 text-center">
+        <!-- Biometric Header -->
+        <div class="mb-5">
+            <div class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 mb-3">
+                <i data-lucide="scan-eye" class="text-primary" size="32"></i>
+            </div>
+            <h2 class="fw-bold">Phase 1: Biometric Verification</h2>
+            <p class="text-muted">Analyzing forensic identity markers for session authorization.</p>
+        </div>
+
+        <div class="premium-card p-0 overflow-hidden shadow-lg border-0 rounded-5">
+            <!-- Camera Viewport -->
+            <div class="position-relative bg-dark" style="aspect-ratio: 4/3; background: #000;">
+                <video id="webcam" autoplay playsinline muted class="w-100 h-100" style="object-fit: cover;"></video>
+                <canvas id="scanCanvas" class="d-none"></canvas>
+                
+                <!-- Overlay Guides -->
+                <div class="position-absolute top-50 start-50 translate-middle border border-2 border-primary border-opacity-50 rounded-circle" style="width: 250px; height: 350px; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);"></div>
+                
+                <!-- Status Overlay -->
+                <div id="statusOverlay" class="position-absolute bottom-0 start-0 end-0 p-4 bg-gradient-dark text-white text-center">
+                    <div id="instructionText" class="fw-bold small text-uppercase tracking-wider">Initializing Neural Link...</div>
+                    <div class="progress mt-2 mx-auto" style="height: 4px; width: 200px; background: rgba(255,255,255,0.1);">
+                        <div id="scanProgress" class="progress-bar bg-primary" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="p-4 bg-white border-top">
+                <div id="livenessCheck" class="mb-3 d-none">
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
+                        <i data-lucide="alert-circle" size="14" class="me-1"></i> LIVENESS CHECK: PLEASE MOVE YOUR HEAD SLIGHTLY
+                    </span>
+                </div>
+
+                <div class="d-grid">
+                    <button id="startScanBtn" class="btn btn-primary py-3 rounded-4 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                        <i data-lucide="camera"></i> INITIATE IDENTITY SCAN
+                    </button>
+                    <div id="loadingState" class="d-none">
+                        <button class="btn btn-secondary py-3 rounded-4 fw-bold w-100" disabled>
+                            <span class="spinner-border spinner-border-sm me-2"></span> ANALYZING BIOMETRIC HASH...
+                        </button>
+                    </div>
+                </div>
+                
+                <p class="small text-muted mt-3 mb-0">
+                    <i data-lucide="lock" size="12"></i> Face data is processed in-memory and never stored with your ballot.
+                    <span class="text-success fw-bold ms-2">Session Integrity: ACTIVE</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('scanCanvas');
+    const startBtn = document.getElementById('startScanBtn');
+    const loadingState = document.getElementById('loadingState');
+    const instruction = document.getElementById('instructionText');
+    const progressBar = document.getElementById('scanProgress');
+    const livenessBadge = document.getElementById('livenessCheck');
+    const statusOverlay = document.getElementById('statusOverlay');
+
+    let stream = null;
+    let frames = [];
+
+    async function initCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.srcObject = stream;
+            instruction.innerText = "Camera Ready - Align Face";
+            progressBar.style.width = "20%";
+        } catch (err) {
+            console.error(err);
+            instruction.innerText = "ACCESS DENIED: CAMERA REQUIRED";
+            instruction.classList.add('text-danger');
+        }
+    }
+
+    function captureFrame() {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.8);
+    }
+
+    startBtn.addEventListener('click', async () => {
+        startBtn.classList.add('d-none');
+        loadingState.classList.add('d-none'); // Hide both initially if clicking again
+        
+        // Step 1: Neutral Frame
+        instruction.innerText = "Capturing Frame 1: Neutral...";
+        progressBar.style.width = "40%";
+        await new Promise(r => setTimeout(r, 1000));
+        frames.push(captureFrame());
+
+        // Step 2: Liveness Check (Step 5)
+        livenessBadge.classList.remove('d-none');
+        instruction.innerText = "Step 2: Blink or Move Head Now";
+        progressBar.style.width = "70%";
+        
+        // Voice command
+        if(window.speakText) speakText("Please move your head slightly to verify liveness.");
+
+        await new Promise(r => setTimeout(r, 2000));
+        frames.push(captureFrame());
+        livenessBadge.classList.add('d-none');
+
+        // Step 3: Send for Matching
+        instruction.innerText = "Validating Neural Markers...";
+        progressBar.style.width = "90%";
+        loadingState.classList.remove('d-none');
+
+        try {
+            const response = await fetch('/verify-face-biometrics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    image: frames[1], // We use the latest frame for matching
+                    liveness_frames: frames 
+                })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                instruction.innerText = "IDENTITY VERIFIED";
+                progressBar.style.width = "100%";
+                statusOverlay.classList.remove('bg-gradient-dark');
+                statusOverlay.classList.add('bg-success');
+                if(window.speakText) speakText("Success. Identity confirmed. Your secure session is now valid for thirty minutes.");
+                
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('election_list') }}";
+                }, 1500);
+            } else {
+                instruction.innerText = "VERIFICATION FAILED";
+                instruction.classList.add('text-danger');
+                progressBar.style.width = "0%";
+                statusOverlay.classList.add('bg-danger');
+                if(window.speakText) speakText("Identity verification failed. Please try again or contact administrator.");
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 3000);
+            }
+        } catch (err) {
+            alert("Biometric Server Error: " + err);
+            location.reload();
+        }
+    });
+
+    initCamera();
+</script>
+{% endblock %}
+{% endblock %}

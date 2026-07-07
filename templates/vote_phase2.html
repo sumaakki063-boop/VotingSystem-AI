@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-success mb-2">Phase 2: Final Voting</span>
+        <h2 class="fw-bold">{{ election.title }}</h2>
+        <p class="text-muted">Study the candidates below and cast your encrypted vote.</p>
+        <div class="d-inline-block px-3 py-2 bg-success bg-opacity-10 rounded-pill border border-success border-opacity-25 mt-2">
+            <span class="small fw-bold text-success">
+                <i data-lucide="clock" size="14" class="me-1"></i>
+                Polls Close In: <span class="countdown-timer" data-end="{{ election.end_date.isoformat() if election.end_date else '' }}">Calculating...</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- AI Suggestion & Match Analysis Panel -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-11">
+            <div class="card p-4 border-0 shadow" style="border-left: 6px solid var(--primary-purple) !important;">
+                <div class="row align-items-center">
+                    <div class="col-md-7">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="p-2 rounded bg-primary bg-opacity-10 me-3">
+                                <i data-lucide="brain-circuit" class="text-primary"></i>
+                            </div>
+                            <h4 class="fw-bold m-0">NEURAL MATCH ANALYSIS</h4>
+                        </div>
+                        <p class="text-secondary small">
+                            The SecureVote AI engine has cross-referenced your profile as a member of the <strong>{{ current_user.department }}</strong> department 
+                            against candidate manifestos to predict alignment and professional benefit.
+                        </p>
+                        
+                        {% if ai_suggestion %}
+                        <div class="p-3 rounded bg-light border border-2 border-primary border-opacity-10 mt-3">
+                            <div class="small fw-bold text-primary text-uppercase mb-1"><i data-lucide="sparkles" size="14"></i> Strategic Insight</div>
+                            <p class="small text-dark m-0">{{ ai_suggestion.top_reason }}</p>
+                        </div>
+                        {% else %}
+                        <div class="p-3 rounded bg-light border border-dashed text-center">
+                            <span class="small text-muted italic">AI Analysis is currently synchronizing... Check match scores on candidate cards.</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-5 mt-4 mt-md-0">
+                        <div id="matchChartContainer" style="height: 220px;"
+                             data-labels="{{ candidates|map(attribute='name')|list|tojson }}"
+                             data-scores="[{% for candidate in candidates %}{% set score = 0 %}{% if ai_suggestion %}{% for sugg in ai_suggestion.suggestions %}{% if sugg.id == candidate.id %}{% set score = sugg.score %}{% endif %}{% endfor %}{% endif %}{{ score }}{{ ',' if not loop.last }}{% endfor %}]">
+                            <canvas id="matchChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form id="voteForm" action="{{ url_for('vote', election_id=election.id) }}" method="POST">
+        <div class="row g-4 justify-content-center">
+            {% for candidate in candidates %}
+            <div class="col-md-4">
+                <input type="radio" class="btn-check" name="candidate_id" id="candidate{{ candidate.id }}" value="{{ candidate.id }}" required>
+                <label class="card h-100 p-0 border-2 candidate-card" for="candidate{{ candidate.id }}">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-3">
+                            <div class="position-absolute top-0 end-0 p-3">
+                                {% if candidate.party_logo %}
+                                    {% if 'http' in candidate.party_logo or 'www' in candidate.party_logo %}
+                                        <img src="{{ candidate.party_logo }}" alt="Party" class="rounded shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='uploads/' + candidate.party_logo) }}" alt="Party" class="rounded shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% endif %}
+                                {% else %}
+                                    <div class="bg-secondary bg-opacity-10 p-2 rounded"><i data-lucide="flag" size="16"></i></div>
+                                {% endif %}
+                            </div>
+                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i data-lucide="user" size="40"></i>
+                            </div>
+                            <h4 class="fw-bold mb-0">{{ candidate.name }}</h4>
+                            <div class="text-primary small fw-bold mt-1">{{ candidate.party_name if candidate.party_name else "Independent" }}</div>
+                            <div class="text-muted small">Candidate Registration Profile</div>
+                            
+                            <!-- Match Badge if exists -->
+                            {% if ai_suggestion %}
+                                {% for sugg in ai_suggestion.suggestions %}
+                                    {% if sugg.id == candidate.id %}
+                                    <div class="mt-2 text-primary small fw-bold">
+                                        <i data-lucide="trending-up" size="14"></i> {{ sugg.score }}% Professional Match
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <div class="small fw-bold text-muted text-uppercase mb-1">Education</div>
+                            <div class="small text-dark">{{ candidate.education if candidate.education else "Academic background not provided." }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="small fw-bold text-muted text-uppercase mb-1">Manifesto</div>
+                            <blockquote class="small font-italic text-secondary border-start ps-2">
+                                "{{ candidate.manifesto if candidate.manifesto else "A vision for a better future." }}"
+                            </blockquote>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 text-center pb-4">
+                        <div class="select-btn btn btn-outline-primary w-100">Select Candidate</div>
+                    </div>
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-6">
+                <!-- Security Panel -->
+                <div class="card p-4 bg-white border-0 shadow-lg text-center security-panel">
+                    <div class="mb-3">
+                        <i data-lucide="shield-check" class="text-primary" size="48"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Layered Verification Engine</h5>
+                    <p class="small text-muted mb-4">Your vote will pass through 7 layers of security including AES-256 encryption and AI pattern analysis.</p>
+                    
+                    <button type="submit" id="initVoteBtn" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow">
+                        Cast Secure Ballot
+                    </button>
+                    <div class="mt-3 d-flex align-items-center justify-content-center gap-2 text-muted small">
+                        <i data-lucide="lock" size="14"></i> End-to-End Encrypted
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Processing Overlay -->
+<div class="modal fade" id="securityOverlay" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 bg-dark text-white shadow-2xl">
+            <div class="modal-body p-5 text-center">
+                <div class="spinner-border text-primary mb-4" style="width: 3.5rem; height: 3.5rem;"></div>
+                <h3 class="fw-bold mb-4">Securing Vault</h3>
+                <div class="text-start mx-auto opacity-75 small" style="max-width: 320px;">
+                    <div id="layer1" class="mb-2 transition-all d-flex align-items-center gap-2"><div class="dot"></div> Identity & Eligibility Verified</div>
+                    <div id="layer2" class="mb-2 transition-all d-flex align-items-center gap-2"><div class="dot"></div> Symmetric Ballot Encryption (AES)</div>
+                    <div id="layer3" class="mb-2 transition-all d-flex align-items-center gap-2"><div class="dot"></div> Llama-3 Behavioral Audit...</div>
+                    <div id="layer4" class="mb-2 transition-all d-flex align-items-center gap-2"><div class="dot"></div> Generation of Tally Proof...</div>
+                </div>
+                <div class="mt-5 fw-bold text-primary" id="statusText">Initiating Security...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .candidate-card { transition: var(--transition); cursor: pointer; }
+    .btn-check:checked + .candidate-card { border-color: var(--primary-purple) !important; background: var(--primary-light); }
+    .btn-check:checked + .candidate-card .select-btn { background: var(--primary-purple); color: white; }
+    .dot { width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; }
+    .layer-done { color: #10b981 !important; opacity: 1 !important; }
+    .layer-done .dot { background: #10b981; }
+    .layer-active { color: var(--primary-purple) !important; opacity: 1 !important; font-weight: 700; }
+    .layer-active .dot { background: var(--primary-purple); }
+</style>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Match Data Injection from Data Attributes
+    const container = document.getElementById('matchChartContainer');
+    if (container) {
+        const chartLabels = JSON.parse(container.dataset.labels || '[]');
+        const chartData = JSON.parse(container.dataset.scores || '[]');
+
+        const canvas = document.getElementById('matchChart');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Match Alignment (%)',
+                        data: chartData,
+                        backgroundColor: 'rgba(124, 58, 237, 0.7)',
+                        borderColor: '#7c3aed',
+                        borderWidth: 2,
+                        borderRadius: 10,
+                        barThickness: 30
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            max: 100,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { font: { weight: 'bold' }, color: '#64748b' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { weight: 'bold' }, color: '#64748b' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    const form = document.getElementById('voteForm');
+    const modal = new bootstrap.Modal(document.getElementById('securityOverlay'));
+    const statusText = document.getElementById('statusText');
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const selected = document.querySelector('input[name="candidate_id"]:checked');
+        if (!selected) { 
+            if(window.speakText) speakText("Please select a candidate first.");
+            alert('Please select a candidate first.'); 
+            return; 
+        }
+
+        modal.show();
+        
+        const layers = [
+            { id: 'layer1', text: 'Validating Identity...' },
+            { id: 'layer2', text: 'Encrypting Ballot...' },
+            { id: 'layer3', text: 'AI Forensic Check...' },
+            { id: 'layer4', text: 'Finalizing Proof...' }
+        ];
+
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i > 0) document.getElementById(layers[i-1].id).classList.add('layer-done');
+            if (i < layers.length) {
+                const el = document.getElementById(layers[i].id);
+                if(el) el.classList.add('layer-active');
+                statusText.innerText = layers[i].text;
+                i++;
+            } else {
+                clearInterval(interval);
+                statusText.innerText = "Ballot Secured!";
+                setTimeout(() => form.submit(), 800);
+            }
+        }, 1200);
+    });
+});
+</script>
+{% endblock %}

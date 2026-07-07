@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    @media print {
+        body * { visibility: hidden !important; }
+        .receipt-container, .receipt-container * { visibility: visible !important; }
+        .receipt-container { 
+            position: absolute !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 100% !important; 
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .btn, .d-print-none, .text-center.mb-5 { display: none !important; }
+        .receipt-card { 
+            box-shadow: none !important; 
+            border: 2px solid #000 !important;
+            margin: 0 auto !important;
+            max-width: 500px !important;
+        }
+    }
+</style>
+
+<div class="container py-5 receipt-container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center mb-5">
+                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <i data-lucide="check-circle" size="40"></i>
+                </div>
+                <h2 class="fw-bold">Vote Successfully Cast</h2>
+                <p class="text-muted">Thank you for participating in the democratic process.</p>
+            </div>
+
+            <div class="card p-0 overflow-hidden border-0 shadow-lg receipt-card">
+                <div class="bg-primary p-4 text-white text-center">
+                    <div class="d-none d-print-block mb-2">
+                        <i data-lucide="check-circle" size="24" class="text-white"></i>
+                        <h6 class="d-inline ms-1">VOTE SECURELY RECORDED</h6>
+                    </div>
+                    <h5 class="mb-0">Official Voting Receipt</h5>
+                    <div class="small opacity-75">Secure Online Voting System</div>
+                </div>
+                <div class="p-4 bg-white">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Voter Name</span>
+                        <span class="fw-bold">{{ current_user.name }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Organization ID</span>
+                        <span class="fw-bold">{{ current_user.org_id }}</span>
+                    </div>
+                    <hr>
+                    <div class="text-center my-4">
+                        <div class="small text-muted mb-1 text-uppercase fw-bold">Receipt ID / Transaction Code</div>
+                        <div class="h4 font-monospace fw-bold text-primary">{{ receipt.receipt_code }}</div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Election</span>
+                        <span class="small fw-bold">{{ receipt.election.title }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Timestamp</span>
+                        <span class="small">{{ receipt.timestamp.strftime('%Y-%m-%d %H:%M:%S') }} UTC</span>
+                    </div>
+                    <div class="bg-dark p-3 rounded mt-4 text-white">
+                        <div class="small text-uppercase opacity-50 mb-1 fw-bold">Permanent Governance Key</div>
+                        <div class="small font-monospace text-wrap">{{ receipt.audit_key }}</div>
+                        <div class="x-small mt-2 opacity-50">Stored in external immutable ledger (Audit Persistence Layer)</div>
+                    </div>
+                </div>
+                <div class="bg-success bg-opacity-10 p-3 text-center border-top">
+                    <div class="d-flex align-items-center justify-content-center gap-2 text-success small fw-bold">
+                        <i data-lucide="database" size="14"></i>
+                        VOTE RECORDED SECURELY USING BLOCKCHAIN
+                    </div>
+                </div>
+                <div class="bg-light p-3 text-center small text-muted">
+                    <i data-lucide="shield" class="me-1" size="14"></i>
+                    This receipt and its Permanent Key are stored in an external immutable ledger to ensure governance integrity.
+                </div>
+            </div>
+
+            <div class="mt-5 text-center d-print-none">
+                <button class="btn btn-outline-primary me-2" onclick="window.print()">
+                    <i data-lucide="printer" class="me-1" size="18"></i> Print Receipt
+                </button>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    Return Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (typeof speakText === 'function') {
+                speakText("Congratulations! Your vote has been successfully cast. Your receipt code is {{ receipt.receipt_code }}. Thank you for participating in this secure democratic process.");
+            }
+        }, 1000);
+    });
+</script>
+{% endblock %}
+{% endblock %}

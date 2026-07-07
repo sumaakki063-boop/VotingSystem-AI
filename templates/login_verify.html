@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card p-5 border-0 shadow-lg text-center">
+                <div class="mb-4">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <i data-lucide="shield-check" size="32"></i>
+                    </div>
+                    <h2 class="fw-bold">Login Verification</h2>
+                    <p class="text-muted">We've sent a 6-digit access code to your email. Please enter it to continue.</p>
+                </div>
+
+                <form action="{{ url_for('login_verify') }}" method="POST">
+                    <div class="mb-4">
+                        <input type="text" name="otp" class="form-control form-control-lg text-center fw-bold" 
+                               placeholder="0 0 0 0 0 0" maxlength="6" required style="letter-spacing: 0.5rem;">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold mb-3">Verify & Sign In</button>
+                    
+                    <div class="small text-muted">
+                        Didn't receive the code? 
+                        <a href="{{ url_for('login') }}" class="text-primary text-decoration-none">Try again</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

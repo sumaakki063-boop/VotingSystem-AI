@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header d-flex justify-content-between align-items-end">
+    <div>
+        <h1>Deep Analytics</h1>
+        <p>Dynamic transparency and forensic data for {{ election.title }}</p>
+    </div>
+    <div class="d-flex gap-3 mt-4 mt-md-0">
+        {% if election.is_declared %}
+        <a href="{{ url_for('verify_audit_certificate', election_id=election.id) }}" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+            <i data-lucide="award" class="me-2"></i> Integrity Certificate
+        </a>
+        <a href="{{ url_for('export_election_archive', election_id=election.id) }}" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm ms-2" target="_blank">
+            <i data-lucide="archive" class="me-2"></i> Export Final Archive
+        </a>
+        {% endif %}
+        <a href="{{ url_for('election_list') }}" class="btn-action">
+            <i data-lucide="arrow-left"></i> Back to Elections
+        </a>
+    </div>
+</div>
+
+{% if show_exit_poll_only %}
+<div class="alert alert-info border-0 shadow-sm rounded-4 p-4 mb-5 d-flex align-items-center">
+    <div class="bg-info bg-opacity-10 p-3 rounded-circle me-4">
+        <i data-lucide="info" class="text-info" size="32"></i>
+    </div>
+    <div>
+        <h4 class="fw-bold mb-1">Exit Poll Information Active</h4>
+        <p class="mb-0 text-muted">Official counts are being audited by governance admins. Data shown below reflects **anonymized exit poll signals and predictive modeling**, not the final verified tally.</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4 mb-5">
+    <!-- Probability vs Tally -->
+    <div class="col-lg-4">
+        <div class="premium-card text-center">
+            <div class="card-title-sm justify-content-center"><i data-lucide="award"></i> Projected Winner</div>
+            <div class="mb-4">
+                {% if votes_data|sum > 0 and prediction_scores %}
+                    {% set max_idx = prediction_scores.index(prediction_scores|max) %}
+                    <div class="h3 fw-bold text-primary">{{ labels[max_idx] }}</div>
+                    <div class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 mt-2">Stability High</div>
+                {% else %}
+                    <div class="h4 text-muted">Awaiting Data</div>
+                {% endif %}
+            </div>
+            <div style="height: 220px;">
+                <canvas id="probabilityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tally Progress (HIDDEN IN EXIT POLL ONLY) -->
+    {% if not show_exit_poll_only %}
+    <div class="col-lg-8">
+        <div class="premium-card">
+            <div class="card-title-sm"><i data-lucide="bar-chart"></i> Real-time Tally Count vs. Voter Sentiment</div>
+            <div style="height: 280px;">
+                <canvas id="predictiveScoreChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-lg-8">
+        <div class="premium-card d-flex flex-column justify-content-center align-items-center text-center py-5">
+            <i data-lucide="lock" class="text-muted mb-3" size="48"></i>
+            <h4 class="fw-bold">Official Tally Sealed</h4>
+            <p class="text-muted px-4">Verification Layer 4 complete. Final counts will be unlocked upon Admin Declaration.</p>
+            <div class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mt-3">Awaiting Audit Completion</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Departmental Breakdown (HIDDEN IN EXIT POLL ONLY) -->
+    <div class="col-lg-6">
+        {% if not show_exit_poll_only %}
+        <div class="premium-card">
+            <div class="card-title-sm"><i data-lucide="network"></i> Participation by Department</div>
+            <div style="height: 350px;">
+                <canvas id="deptChart"></canvas>
+            </div>
+        </div>
+        {% else %}
+        <div class="premium-card d-flex flex-column justify-content-center align-items-center text-center py-5" style="height: 350px;">
+            <i data-lucide="pie-chart" class="text-primary opacity-25 mb-3" size="64"></i>
+            <h5 class="fw-bold">Granular Data Locked</h5>
+            <p class="text-muted small px-5">Departmental and demographic participation metrics are reserved for post-declaration forensic review.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Candidate Pillars -->
+    <div class="col-lg-6">
+        <div class="premium-card">
+            <div class="card-title-sm"><i data-lucide="target"></i> Candidate Manifesto Pillars (Radar)</div>
+            <div style="height: 350px;">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NEW: Exit Poll Insights Section -->
+<div class="dashboard-header mt-5">
+    <div>
+        <h2>Democratic Feedback Analysis</h2>
+        <p>Anonymous exit poll data focusing on voter intent and priorities.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Trending Issues -->
+    <div class="col-lg-6">
+        <div class="premium-card">
+            <div class="card-title-sm"><i data-lucide="message-square"></i> Trending Voter Concerns (Top Issues)</div>
+            <div style="height: 320px;">
+                <canvas id="issuesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Influence Factors -->
+    <div class="col-lg-6">
+        <div class="premium-card">
+            <div class="card-title-sm"><i data-lucide="zap"></i> Voter Decision Drivers (Influence Factors)</div>
+            <div style="height: 320px;">
+                <canvas id="influenceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.role == 'admin' %}
+<div class="premium-card mb-5">
+    <div class="card-title-sm text-danger"><i data-lucide="shield-alert"></i> Live Forensic Audit Log (Layer 5)</div>
+    <div class="table-responsive">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Anomaly Source</th>
+                    <th>Forensic Detail</th>
+                    <th>Protocol Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in fraud_logs %}
+                <tr>
+                    <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                    <td><code class="text-primary">{{ log.ip_address }}</code></td>
+                    <td class="text-danger small fw-bold">{{ log.reason }}</td>
+                    <td><span class="badge bg-success rounded-pill">Quarantined</span></td>
+                </tr>
+                {% endfor %}
+                {% if not fraud_logs %}
+                <tr><td colspan="4" class="text-center py-5 text-muted">No security anomalies detected in this cycle.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Embedded Forensic Data (Layer 5) -->
+    <script id="analyticsData" type="application/json">
+        {
+            "labels": {{ labels|tojson|safe }},
+            "votesData": {{ votes_data|tojson|safe }},
+            "manifestoData": {{ manifesto_data|tojson|safe }},
+            "deptLabels": {{ dept_labels|tojson|safe }},
+            "deptDataMap": {{ dept_data|tojson|safe }},
+            "issueLabels": {{ trending_issues.keys()|list|tojson|safe }},
+            "issueData": {{ trending_issues.values()|list|tojson|safe }},
+            "influenceLabels": {{ influence_data.keys()|list|tojson|safe }},
+            "influenceData": {{ influence_data.values()|list|tojson|safe }},
+            "exitPollRatings": {{ exit_poll_ratings|tojson|safe }},
+            "predictionScores": {{ prediction_scores|tojson|safe }},
+            "isExitPollOnly": {{ show_exit_poll_only|tojson|safe }}
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const colors = [
+                { solid: '#7c3aed', soft: 'rgba(124, 58, 237, 0.2)' },
+                { solid: '#3b82f6', soft: 'rgba(59, 130, 246, 0.2)' },
+                { solid: '#10b981', soft: 'rgba(16, 185, 129, 0.2)' },
+                { solid: '#f59e0b', soft: 'rgba(245, 158, 11, 0.2)' }
+            ];
+
+            // Parse data from the embedded JSON script
+            const dataEl = document.getElementById('analyticsData');
+            const data = JSON.parse(dataEl.textContent);
+            const { labels: chartLabels, votesData, manifestoData, deptLabels, deptDataMap } = data;
+
+        // 1. Victory Probability / Exit Poll Prediction
+        new Chart(document.getElementById('probabilityChart'), {
+            type: 'doughnut',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    data: data.isExitPollOnly ? data.predictionScores : votesData,
+                    backgroundColor: colors.map(c => c.solid),
+                    borderWidth: 0,
+                    cutout: '70%'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // 2. Bar Tally + Sentiment Score
+        new Chart(document.getElementById('predictiveScoreChart'), {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: 'Ballots Cast',
+                        data: votesData,
+                        backgroundColor: colors.map(c => c.solid),
+                        borderRadius: 12,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Satisfaction Index (100-pt)',
+                        data: data.exitPollRatings.map(r => r * 20),
+                        type: 'line',
+                        borderColor: '#f59e0b',
+                        backgroundColor: '#f59e0b',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#f1f5f9' },
+                        title: { display: true, text: 'Ballots' }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        max: 100,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Satisfaction %' }
+                    }
+                } 
+            }
+        });
+
+        // 3. Radar Chart
+        const radarDatasets = manifestoData.map((cand, i) => ({
+            label: cand.name,
+            data: cand.scores,
+            backgroundColor: colors[i % colors.length].soft,
+            borderColor: colors[i % colors.length].solid,
+            pointBackgroundColor: colors[i % colors.length].solid
+        }));
+
+        new Chart(document.getElementById('radarChart'), {
+            type: 'radar',
+            data: { labels: ['Education', 'Jobs', 'Infra', 'Health', 'Economy'], datasets: radarDatasets },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+            // 4. Dept Chart (Only if not exit poll)
+            if (document.getElementById('deptChart')) {
+                new Chart(document.getElementById('deptChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: deptLabels,
+                        datasets: chartLabels.map((name, i) => ({
+                            label: name,
+                            data: deptDataMap[name],
+                            backgroundColor: colors[i % colors.length].solid,
+                            borderRadius: 8
+                        }))
+                    },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+                });
+            }
+
+            // 5. Issues Chart (Polar Area)
+            new Chart(document.getElementById('issuesChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: data.issueLabels,
+                    datasets: [{
+                        data: data.issueData,
+                        backgroundColor: colors.map(c => c.soft),
+                        borderColor: colors.map(c => c.solid),
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+
+            // 6. Influence Chart (Pie)
+            new Chart(document.getElementById('influenceChart'), {
+                type: 'pie',
+                data: {
+                    labels: data.influenceLabels,
+                    datasets: [{
+                        data: data.influenceData,
+                        backgroundColor: colors.map(c => c.solid),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        });
+</script>
+{% endblock %}

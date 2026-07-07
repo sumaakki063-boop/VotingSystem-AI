@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="certificate-container p-5 text-center shadow-lg position-relative overflow-hidden" id="certificate">
+                <!-- Watermark -->
+                <div class="watermark"><i class="fas fa-shield-alt"></i></div>
+                
+                <div class="certificate-border"></div>
+                
+                <div class="certificate-content py-4">
+                    <img src="https://img.icons8.com/color/96/000000/guarantee.png" alt="Seal" class="mb-3">
+                    <h1 class="certificate-title">Election Integrity Certificate</h1>
+                    <p class="certificate-subtitle">OFFICIAL VERIFICATION OF CRYPTOGRAPHIC LEDGER</p>
+                    
+                    <hr class="cert-hr">
+                    
+                    <div class="cert-body py-4">
+                        <p>This document certifies that the election</p>
+                        <h2 class="election-title text-uppercase">{{ election.title }}</h2>
+                        <p>has been successfully processed and verified through the</p>
+                        <h4 class="platform-name">SecureVote AI Decentralized Ledger</h4>
+                    </div>
+
+                    <div class="cert-metrics row g-3 text-start mt-4">
+                        <div class="col-6">
+                            <label class="text-muted small">TOTAL BLOCKS COMMIT</label>
+                            <div class="fw-bold">{{ total_blocks }} Verified Nodes</div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <label class="text-muted small">CHAIN STATUS</label>
+                            <div class="h5 mb-0 fw-bold {% if is_valid %}text-success{% else %}text-danger{% endif %} text-uppercase shadow-sm px-2 d-inline-block rounded">
+                                {% if is_valid %}VALID & IMMUTABLE ✅{% else %}INTEGRITY COMPROMISED ❌{% endif %}
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small text-uppercase">Blockchain Root Hash (Merkle Proof)</label>
+                            <div class="font-monospace small p-3 bg-light border rounded text-dark break-all shadow-inner" style="font-size: 0.75rem;">{{ root_hash }}</div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <label class="text-muted small">VERIFICATION TIMESTAMP</label>
+                                    <div class="fw-bold">{{ timestamp.strftime('%B %d, %Y - %H:%M:%S UTC') }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="text-muted small">CERTIFICATE ID</label>
+                                    <div class="fw-bold font-monospace">SV-CERT-{{ election.id }}-{{ timestamp.strftime('%y%m%d') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=SV-CERT-{{ election.id }}-{{ timestamp.strftime('%y%m%d') }}-{{ root_hash[:16] }}" alt="Verification QR" class="img-thumbnail shadow-sm p-1">
+                            <div class="small text-muted mt-1 opacity-50" style="font-size: 0.5rem;">SCAN TO VERIFY LEDGER</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 d-flex justify-content-around">
+                        <div class="signature-line">
+                            <div class="sig">SecureVote AI Algorithm</div>
+                            <label>System Auditor</label>
+                        </div>
+                        <div class="signature-line">
+                            <div class="sig">Governance Engine</div>
+                            <label>Network Validator</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4 no-print">
+                <button onclick="window.print()" class="btn btn-primary btn-lg shadow">
+                    <i class="fas fa-print me-2"></i>Download / Print Certificate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .certificate-container {
+        background: #fff;
+        color: #333;
+        border: 20px solid #f8f9fa;
+        min-height: 700px;
+        position: relative;
+    }
+    .certificate-border {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        border: 2px solid #0d6efd;
+        pointer-events: none;
+    }
+    .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 20rem;
+        color: rgba(13, 110, 253, 0.03);
+        z-index: 0;
+    }
+    .certificate-content {
+        position: relative;
+        z-index: 1;
+    }
+    .certificate-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        letter-spacing: 2px;
+        color: #1a1a1a;
+    }
+    .certificate-subtitle {
+        letter-spacing: 4px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #0d6efd;
+    }
+    .cert-hr {
+        width: 150px;
+        margin: 20px auto;
+        height: 3px;
+        background: #0d6efd;
+        opacity: 1;
+    }
+    .election-title {
+        color: #0d6efd;
+        font-weight: 800;
+        margin: 15px 0;
+    }
+    .cert-metrics {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+    }
+    .sig {
+        font-family: 'Dancing Script', cursive;
+        font-size: 1.5rem;
+        border-bottom: 2px solid #333;
+        padding-bottom: 5px;
+        width: 200px;
+        margin-bottom: 5px;
+    }
+    .signature-line label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .break-all { word-break: break-all; }
+
+    @media print {
+        .no-print, nav, footer, .app-sidebar, .mobile-top-bar, .flash-msg-read { display: none !important; }
+        body { background: white !important; margin: 0 !important; padding: 0 !important; color: black; }
+        .main-wrapper { margin-left: 0 !important; padding: 0 !important; background: white !important; }
+        .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        .row { margin: 0 !important; }
+        .col-md-8 { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        .certificate-container { 
+            border: 10px solid #eee !important; 
+            box-shadow: none !important; 
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            max-width: 800px;
+            height: 98vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 2rem !important;
+        }
+        .cert-body { padding: 1rem 0 !important; }
+        .cert-metrics { padding: 15px !important; margin-top: 10px !important; }
+        @page { size: A4 portrait; margin: 0.5cm; }
+    }
+</style>
+
+<!-- Load fonts for certificate -->
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+{% endblock %}

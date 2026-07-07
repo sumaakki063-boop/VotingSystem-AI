@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVote AI - Governance Portal</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- Mobile Header -->
+    <div class="mobile-top-bar">
+        <a class="sidebar-brand m-0" href="{{ url_for('index') }}" style="font-size: 1rem;">
+            <i data-lucide="shield-check" size="20"></i>
+            <span>SecureVote AI</span>
+        </a>
+        <div class="d-flex align-items-center gap-2">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger border-0">
+                    <i data-lucide="log-out" size="20"></i>
+                </a>
+            {% endif %}
+            <button class="mobile-toggle" onclick="toggleSidebar()">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+    </div>
+
+    <aside class="app-sidebar">
+        <a class="sidebar-brand" href="{{ url_for('index') }}">
+            <i data-lucide="shield-check"></i>
+            <span>SecureVote AI</span>
+        </a>
+        
+        <nav class="nav-menu">
+            <a href="{{ url_for('index') }}" class="nav-link {{ 'active' if request.endpoint == 'index' }}">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </a>
+            
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('election_list') }}" class="nav-link {{ 'active' if request.endpoint == 'election_list' }}">
+                    <i data-lucide="vote"></i>
+                    <span>Elections</span>
+                </a>
+                
+                <a href="{{ url_for('security_info') }}" class="nav-link {{ 'active' if request.endpoint == 'security_info' }}">
+                    <i data-lucide="shield-alert"></i>
+                    <span>Security Hub</span>
+                </a>
+
+                
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
+                        <i data-lucide="settings"></i>
+                        <span>Admin Panel</span>
+                    </a>
+                    <a href="{{ url_for('blockchain_explorer') }}" class="nav-link {{ 'active' if request.endpoint == 'blockchain_explorer' }}">
+                        <i data-lucide="binary"></i>
+                        <span>Forensic Explorer</span>
+                    </a>
+                    <div class="sidebar-divider mx-3 my-3 border-top opacity-25"></div>
+                    <div class="px-3 mb-2 small text-muted fw-bold text-uppercase" style="font-size: 0.6rem;">Deployment Certificates</div>
+                    {% for election in global_elections %}
+                        {% if election.is_declared %}
+                        <a href="{{ url_for('verify_audit_certificate', election_id=election.id) }}" class="nav-link py-1" style="font-size: 0.8rem;">
+                            <i data-lucide="award" size="14"></i>
+                            <span class="truncate">{{ election.title }}</span>
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                    <a href="{{ url_for('blockchain_explorer') }}" class="nav-link mt-2 border-top border-opacity-10 pt-3">
+                        <i data-lucide="database"></i>
+                        <span>System Registry</span>
+                    </a>
+                {% endif %}
+            {% else %}
+                <a href="{{ url_for('login') }}" class="nav-link {{ 'active' if request.endpoint == 'login' }}">
+                    <i data-lucide="log-in"></i>
+                    <span>Voter Login</span>
+                </a>
+                <a href="{{ url_for('register') }}" class="nav-link {{ 'active' if request.endpoint == 'register' }}">
+                    <i data-lucide="user-plus"></i>
+                    <span>Registration</span>
+                </a>
+            {% endif %}
+        </nav>
+        
+        <div class="mt-auto">
+            {% if current_user.is_authenticated %}
+                <div class="p-3 bg-light rounded-3 mb-3">
+                    <div class="small text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Active User</div>
+                    <div class="fw-bold truncate" style="font-size: 0.85rem;">{{ current_user.name }}</div>
+                </div>
+                
+                <!-- AI Voice Control -->
+                <div class="mb-3 p-2 bg-light border-0 rounded-3 text-center d-grid gap-2">
+                    <button onclick="stopSpeaking()" class="btn btn-sm btn-outline-danger rounded-pill py-1 fw-bold" style="font-size: 0.7rem;">
+                        <i data-lucide="volume-x" size="12"></i> STOP AI VOICE
+                    </button>
+                    <button id="replayVoiceBtn" class="btn btn-sm btn-primary rounded-pill py-1 fw-bold shadow-sm" style="font-size: 0.7rem;">
+                        <i data-lucide="play" size="12"></i> RE-PLAY AI STATS
+                    </button>
+                </div>
+
+                <div class="sidebar-divider mx-3 my-3 border-top opacity-10"></div>
+                
+                <a href="{{ url_for('logout') }}" class="nav-link text-danger mt-3" style="background: rgba(220, 38, 38, 0.05); border: 1px solid rgba(220, 38, 38, 0.1);">
+                    <i data-lucide="log-out"></i>
+                    <span class="fw-bold">Sign Out</span>
+                </a>
+            {% else %}
+                <div class="p-3 bg-primary bg-opacity-10 rounded-3 text-primary small fw-bold">
+                    <i data-lucide="info" size="14" class="me-1"></i> Public Terminal
+                </div>
+            {% endif %}
+
+            <div class="sidebar-divider mx-3 my-4 border-top opacity-10"></div>
+            
+            <div class="px-3 mb-2 small text-muted fw-bold text-uppercase" style="font-size: 0.6rem;">System Tools</div>
+            
+
+
+            <!-- Guide Button -->
+            <button class="nav-link w-100 border-0 bg-transparent text-start mb-1" data-bs-toggle="modal" data-bs-target="#userGuideModal">
+                <i data-lucide="book-open" class="text-primary"></i>
+                <span>User Guide</span>
+            </button>
+
+            <div class="nav-link d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-lucide="bell" id="bellIcon"></i>
+                    <span>Alerts</span>
+                </div>
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" id="notifSwitch" style="cursor: pointer;">
+                </div>
+            </div>
+
+            <!-- PWA Install Button (Relocated below Alerts) -->
+            <button id="installAppBtn" class="nav-link w-100 border-0 bg-transparent text-start mb-1">
+                <i data-lucide="download-cloud" class="text-success"></i>
+                <span id="installBtnText">Install Platform</span>
+            </button>
+
+            <!-- Global Blockchain Status -->
+            <a href="{{ url_for('blockchain_explorer') }}" class="text-decoration-none d-block mt-4">
+                <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <div class="spinner-grow text-success" style="width: 8px; height: 8px;"></div>
+                        <span class="small fw-bold text-success text-uppercase" style="font-size: 0.65rem;">Blockchain: SYNCED ⛓️</span>
+                    </div>
+                    <div class="small fw-bold text-muted" style="font-size: 0.75rem;">Status: VERIFIED ✅</div>
+                </div>
+            </a>
+        </div>
+    </aside>
+
+    <!-- User Guide Modal -->
+    <div class="modal fade" id="userGuideModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+                <div class="modal-header bg-primary text-white p-4">
+                    <h5 class="modal-title fw-bold">
+                        <i data-lucide="help-circle" class="me-2"></i> SecureVote Platform Guide
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+                </div>
+                <div class="modal-body p-5">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-4 h-100">
+                                <h6 class="fw-bold text-primary"><i data-lucide="scan-eye" class="me-2"></i> 1. Verification</h6>
+                                <p class="small text-muted mb-0">Ensure proper lighting for face authentication. The session lasts 30 minutes before requiring a fresh scan.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-4 h-100">
+                                <h6 class="fw-bold text-primary"><i data-lucide="shield-check" class="me-2"></i> 2. Secure Voting</h6>
+                                <p class="small text-muted mb-0">Select your candidate and confirm. Once cast, your vote is encrypted via AES-256 and committed to the ledger.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-4 h-100">
+                                <h6 class="fw-bold text-primary"><i data-lucide="download" class="me-2"></i> 3. App Installation</h6>
+                                <p class="small text-muted mb-0">Click 'Install Platform' in the sidebar to add SecureVote to your home screen or desktop for a native experience.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-4 h-100">
+                                <h6 class="fw-bold text-primary"><i data-lucide="bell" class="me-2"></i> 4. Alerts</h6>
+                                <p class="small text-muted mb-0">Enable 'Alerts' switch to receive real-time notifications about election starts and official declaration of results.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-5">
+                        <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold" data-bs-dismiss="modal">GOT IT - START VOTING</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-wrapper">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container-fluid mb-4">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'error' else 'danger' }} border-0 shadow-sm alert-dismissible fade show rounded-4 flash-msg-read d-flex align-items-center justify-content-between p-3" role="alert" data-message="{{ message }}">
+                            <div class="d-flex align-items-center flex-grow-1 pe-3">
+                                <div class="alert-icon-wrapper me-3">
+                                    <i data-lucide="{{ 'check-circle' if category == 'success' else 'shield-alert' if category == 'error' else 'info' }}" size="20"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <span class="fw-medium text-dark">{{ message }}</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-link p-2 text-decoration-none border-0 bg-transparent download-alert-btn" onclick="downloadAlert('{{ message }}')" title="Download Secure Record">
+                                    <i data-lucide="download" size="18" class="text-{{ category if category != 'error' else 'danger' }} opacity-75"></i>
+                                </button>
+                                <button type="button" class="btn-close ms-0 position-static" data-bs-dismiss="alert"></button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="container-fluid">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Global Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        lucide.createIcons();
+
+        function toggleSidebar() {
+            document.querySelector('.app-sidebar').classList.toggle('show');
+        }
+
+        // Close sidebar when clicking links on mobile
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 992) {
+                    document.querySelector('.app-sidebar').classList.remove('show');
+                }
+            });
+        });
+
+        // AI Voice Modulation Logic (Indian Female Accent)
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            
+            const utter = () => {
+                const voices = window.speechSynthesis.getVoices();
+                if (voices.length === 0) return false;
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Priority: en-IN (Indian English) Female
+                let selectedVoice = voices.find(v => 
+                    (v.lang === 'en-IN' || v.lang === 'en_IN') && 
+                    (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('google'))
+                );
+
+                if (!selectedVoice) selectedVoice = voices.find(v => v.lang.includes('IN'));
+                if (!selectedVoice) selectedVoice = voices.find(v => v.lang.includes('en') && v.name.toLowerCase().includes('female'));
+
+                if (selectedVoice) utterance.voice = selectedVoice;
+                
+                utterance.rate = 0.95;
+                utterance.pitch = 1.05;
+                window.speechSynthesis.speak(utterance);
+                return true;
+            };
+
+            if (!utter()) {
+                window.speechSynthesis.onvoiceschanged = utter;
+            }
+        }
+
+        function stopSpeaking() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        // Secure Digital Download for Alerts/Records
+        function downloadAlert(message) {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const alertId = `SV-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            const content = `
+╔══════════════════════════════════════════════════════════╗
+║             SECUREVOTE AI - OFFICIAL RECORD              ║
+╚══════════════════════════════════════════════════════════╝
+  
+  [ RECORD IDENTITY ]
+  ----------------------------------------------------------
+  LOG TYPE: System Alert / Sovereignty Notification
+  TIMESTAMP: ${new Date().toLocaleString()}
+  RECORD ID: ${alertId}
+  NETWORK: SecureVote-Mainnet-v4.2
+  NODE: SV-GW-PROD-01
+  
+  [ MESSAGE PAYLOAD ]
+  ----------------------------------------------------------
+  ${message}
+  ----------------------------------------------------------
+  
+  [ INTEGRITY PROOF ]
+  ----------------------------------------------------------
+  The contents of this alert have been cryptographically
+  signed and verified against the electoral blockchain
+  persistence layer. This record is immutable and 
+  verifiable for audit purposes.
+  
+  SHA-256 Digest: ${btoa(message).substr(0, 32)}...
+  Status: VERIFIED & SEALED ✅
+  
+════════════════════════════════════════════════════════════
+    © 2026 SecureVote AI Governance Foundation
+════════════════════════════════════════════════════════════
+`;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `SecureVote_Record_${alertId}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // Global Alert Enhancement: Add download buttons to ALL alerts
+        window.addEventListener('load', () => {
+            const allAlerts = document.querySelectorAll('.alert:not(.flash-msg-read)');
+            allAlerts.forEach(alert => {
+                if (alert.querySelector('.download-alert-btn')) return;
+                
+                // Ensure alert has relative position for button placement
+                alert.style.position = 'relative';
+                
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm btn-link p-1 text-decoration-none border-0 bg-transparent download-alert-btn opacity-50 hover-opacity-100';
+                btn.innerHTML = '<i data-lucide="download" size="14"></i>';
+                btn.title = 'Download Information';
+                btn.style.position = 'absolute';
+                btn.style.top = '5px';
+                btn.style.right = alert.classList.contains('alert-dismissible') ? '35px' : '10px';
+                
+                // Get alert text (excluding scripts/buttons)
+                const clone = alert.cloneNode(true);
+                clone.querySelectorAll('button, script, .btn-close').forEach(el => el.remove());
+                const message = clone.innerText.trim();
+                
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    downloadAlert(message);
+                };
+                
+                alert.appendChild(btn);
+                if (window.lucide) lucide.createIcons();
+            });
+        });
+
+        // Auto-read flash messages
+        window.addEventListener('load', () => {
+            const alerts = document.querySelectorAll('.flash-msg-read');
+            alerts.forEach((alert, index) => {
+                setTimeout(() => {
+                    speakText(alert.dataset.message);
+                }, index * 1500); // Stagger announcements
+            });
+        });
+        
+        // Countdown update logic
+        function updateCountdowns() {
+            document.querySelectorAll('.countdown-timer').forEach(el => {
+                const endStr = el.dataset.end;
+                if (!endStr) { el.innerHTML = "Time Unset"; return; }
+                
+                const endDate = new Date(endStr).getTime();
+                const now = new Date().getTime();
+                const diff = endDate - now;
+                
+                if (isNaN(diff)) { 
+                    el.innerHTML = "Invalid Date"; 
+                    return; 
+                }
+                
+                if (diff <= 0) { 
+                    el.innerHTML = "Voting Closed"; 
+                    return; 
+                }
+                
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                if (hours > 0) {
+                    el.innerHTML = hours + "h " + mins + "m left";
+                } else {
+                    el.innerHTML = mins + "m " + secs + "s left";
+                }
+            });
+        }
+        setInterval(updateCountdowns, 60000);
+        updateCountdowns();
+
+        // PWA Installation Logic - Advanced Capture
+        let deferredPrompt;
+        const installBtn = document.getElementById('installAppBtn');
+        const installBtnText = document.getElementById('installBtnText');
+
+        // Capture the prompt as soon as it's available
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('Installation prompt captured');
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtnText) installBtnText.innerText = "Install Secure Platform";
+            installBtn.classList.remove('opacity-50');
+            installBtn.title = "Click to install SecureVote AI on your device";
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Directly trigger the browser's native install dialog
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    if (installBtnText) installBtnText.innerText = "Deployment Complete";
+                    installBtn.classList.add('opacity-50');
+                }
+                deferredPrompt = null;
+            } else {
+                // Check if already in standalone mode
+                if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+                    alert("This platform is already running in its own secure window.");
+                    if (installBtnText) installBtnText.innerText = "Running as Native App";
+                    installBtn.classList.add('opacity-50');
+                } else {
+                    // Feedback for when the browser has already handled the installation
+                    alert("Click the 'Install' icon (computer with arrow) located on the right side of your browser's address bar to complete the direct device installation.");
+                }
+            }
+        });
+
+        // Listen for successful installation
+        window.addEventListener('appinstalled', (evt) => {
+            if (installBtnText) installBtnText.innerText = "Platform Installed";
+            installBtn.classList.add('opacity-50');
+            console.log('SecureVote AI has been successfully installed on the device');
+        });
+
+        // Immediate check for existing installation
+        function checkInstallation() {
+            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+                if (installBtnText) installBtnText.innerText = "Running as Native App";
+                installBtn.classList.add('opacity-50');
+            }
+        }
+        window.addEventListener('load', checkInstallation);
+        checkInstallation();
+
+        // Notifications Logic
+        const notifSwitch = document.getElementById('notifSwitch');
+        
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                notifSwitch.checked = true;
+            }
+
+            notifSwitch.addEventListener('change', async () => {
+                if (notifSwitch.checked) {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== 'granted') {
+                        notifSwitch.checked = false;
+                        alert("Notification permission denied.");
+                    } else {
+                        new Notification("SecureVote AI", {
+                            body: "Notifications enabled! You will receive critical election alerts.",
+                            icon: "/static/icons/icon-192.png"
+                        });
+                    }
+                }
+            });
+        } else {
+            notifSwitch.disabled = true;
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered:', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

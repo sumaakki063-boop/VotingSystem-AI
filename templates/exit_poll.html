@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg p-5" style="border-radius: 20px;">
+                <div class="text-center mb-5">
+                    <div class="badge bg-soft-primary text-primary mb-3 px-3 py-2 rounded-pill fw-bold">Step 2: Democratic Feedback</div>
+                    <h2 class="fw-bold">Anonymous Exit Poll</h2>
+                    <p class="text-muted">Your vote is already secure. Help us analyze the trends! <br> <span class="badge bg-info">Responses are completely anonymous.</span></p>
+                </div>
+
+                <form action="{{ url_for('exit_poll', election_id=election.id, receipt_id=receipt_id) }}" method="POST">
+                    <!-- Influence Factor -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold"><i data-lucide="help-circle" class="me-2 text-primary" size="18"></i> Which factor influenced your vote most?</label>
+                        <select name="influence" class="form-select" required>
+                            <option value="" disabled selected>Select Influence Factor</option>
+                            <option value="Manifesto & Promises">Manifesto & Promises</option>
+                            <option value="Past Performance">Past Performance</option>
+                            <option value="Candidate Reputation">Candidate Reputation</option>
+                            <option value="External Recommendations">External Recommendations</option>
+                            <option value="Party Alignment">Party Alignment</option>
+                        </select>
+                    </div>
+
+                    <!-- Candidate Preference (Optional) -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold"><i data-lucide="user" class="me-2 text-primary" size="18"></i> For whom did you cast your vote?</label>
+                        <div class="row g-3">
+                            {% for c in candidates %}
+                            <div class="col-md-6">
+                                <input type="radio" class="btn-check" name="candidate_id" id="cand_{{ c.id }}" value="{{ c.id }}" autocomplete="off">
+                                <label class="btn btn-outline-primary w-100 py-3 d-flex align-items-center justify-content-center" for="cand_{{ c.id }}">
+                                    {% if c.party_logo %}
+                                        {% if 'http' in c.party_logo or 'www' in c.party_logo %}
+                                            <img src="{{ c.party_logo }}" class="me-2 rounded-circle" width="24" height="24" alt="logo">
+                                        {% else %}
+                                            <img src="{{ url_for('static', filename='uploads/' + c.party_logo) }}" class="me-2 rounded-circle" width="24" height="24" alt="logo">
+                                        {% endif %}
+                                    {% endif %}
+                                    {{ c.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                            <div class="col-12">
+                                <input type="radio" class="btn-check" name="candidate_id" id="cand_prefer_not" value="" autocomplete="off">
+                                <label class="btn btn-outline-secondary w-100 py-2" for="cand_prefer_not">Prefer not to say</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rating -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold"><i data-lucide="star" class="me-2 text-primary" size="18"></i> Rate Candidate Promises (1-5)</label>
+                        <div class="d-flex justify-content-between px-2">
+                            <span>Poor</span>
+                            <span>Excellent</span>
+                        </div>
+                        <input type="range" class="form-range" name="rating" min="1" max="5" step="1" id="ratingRange">
+                        <div class="d-flex justify-content-between px-2 small text-muted">
+                            <span>1</span>
+                            <span>2</span>
+                            <span>3</span>
+                            <span>4</span>
+                            <span>5</span>
+                        </div>
+                    </div>
+
+                    <!-- Issue Priority -->
+                    <div class="mb-5">
+                        <label class="form-label fw-bold"><i data-lucide="check-square" class="me-2 text-primary" size="18"></i> Which issue matters most to you?</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for issue in ['Jobs', 'Education', 'Infrastructure', 'Healthcare', 'Economy', 'Security', 'Technology'] %}
+                            <input type="radio" class="btn-check" name="issue" id="issue_{{ issue }}" value="{{ issue }}" autocomplete="off" required>
+                            <label class="btn btn-outline-secondary btn-sm px-3 rounded-pill" for="issue_{{ issue }}">{{ issue }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                            Submit & View My Receipt <i data-lucide="arrow-right" class="ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

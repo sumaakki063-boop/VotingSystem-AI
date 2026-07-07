@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 fw-bold">External Audit Results</h1>
+            <p class="text-muted">Verification of uploaded blockchain archive: <code>{{ filename }}</code></p>
+        </div>
+        <a href="{{ url_for('blockchain_explorer') }}" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i>Back to Explorer
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+        <div class="card-body p-4 text-center {% if is_all_valid %}bg-success-soft{% else %}bg-danger-soft{% endif %}">
+            <div class="mb-3">
+                <i class="fas {% if is_all_valid %}fa-shield-check text-success{% else %}fa-exclamation-triangle text-danger{% endif %} display-4"></i>
+            </div>
+            <h3 class="fw-bold">
+                {% if is_all_valid %}
+                LEGER INTEGRITY VERIFIED
+                {% else %}
+                TAMPERING DETECTED IN ARCHIVE
+                {% endif %}
+            </h3>
+            <p class="mb-0">
+                {% if is_all_valid %}
+                All {{ results|length }} blocks match the platform's cryptographic rules and governance signatures.
+                {% else %}
+                Critical anomalies found in the provided blockchain data. This file should be considered compromised.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <h4 class="fw-bold mb-3">Granular Audit Log</h4>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border rounded-4 overflow-hidden">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 100px;">Index</th>
+                    <th>Block Hash</th>
+                    <th>Status</th>
+                    <th>Forensic Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for res in results %}
+                <tr class="{% if not res.valid %}table-danger-soft{% endif %}">
+                    <td class="fw-bold">#{{ res.index }}</td>
+                    <td><code class="small text-dark">{{ res.hash }}</code></td>
+                    <td>
+                        {% if res.valid %}
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">
+                            <i class="fas fa-check me-1"></i>SECURE
+                        </span>
+                        {% else %}
+                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">
+                            <i class="fas fa-times me-1"></i>FAILED
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if res.valid %}
+                        <span class="text-muted small italic">Hash and Links Validated</span>
+                        {% else %}
+                        <span class="text-danger small fw-bold">{{ res.error }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .bg-success-soft { background-color: rgba(25, 135, 84, 0.05); }
+    .bg-danger-soft { background-color: rgba(220, 53, 69, 0.05); }
+    .table-danger-soft { background-color: rgba(220, 53, 69, 0.02) !important; }
+</style>
+{% endblock %}

@@ -1,0 +1,196 @@
+<!-- Init Election Modal -->
+<div class="modal fade" id="initElectionModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 overflow-hidden">
+            <form id="initElectionForm" action="{{ url_for('init_election') }}" method="POST">
+                <div class="modal-header bg-light p-4">
+                    <h5 class="modal-title fw-bold">Initialize Election Cycle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div id="initFormBody" class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">ELECTION TITLE</label>
+                        <input type="text" name="title" class="form-control rounded-4 p-3" placeholder="e.g. Board Elections 2026" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">START (PHASE 1 BEGINS)</label>
+                        <input type="datetime-local" id="init_start_date" name="start_date" class="form-control rounded-4" required>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">PHASE 1 END / PHASE 2 START</label>
+                            <input type="datetime-local" id="init_phase1_end" name="phase1_end" class="form-control rounded-4" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">FINISH (PHASE 2 ENDS)</label>
+                            <input type="datetime-local" id="init_end_date" name="end_date" class="form-control rounded-4" required>
+                        </div>
+                    </div>
+                </div>
+                <div id="initFormFooter" class="modal-footer p-4 bg-light border-0">
+                    <button type="submit" id="deployBtn" class="btn btn-primary rounded-pill w-100 py-3 fw-bold">
+                        <span class="btn-text">Deploy Governance Cycle</span>
+                        <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Success State -->
+            <div id="initSuccessState" class="modal-body p-5 text-center d-none">
+                <div class="mb-4">
+                    <div class="bg-success bg-opacity-10 text-success d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 80px; height: 80px;">
+                        <i data-lucide="check-circle" size="40"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bold mb-2">Cycle Initialized</h4>
+                <p id="initSuccessText" class="text-muted mb-4 small"></p>
+                <button type="button" class="btn btn-dark rounded-pill px-5 py-3 fw-bold w-100 shadow-sm" onclick="location.reload()">
+                    OK - CONTINUE
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-fill dates logic
+    const startInput = document.getElementById('init_start_date');
+    const phase1Input = document.getElementById('init_phase1_end');
+    const endInput = document.getElementById('init_end_date');
+
+    if (startInput && phase1Input && endInput) {
+        function formatDateTimeLocal(date) {
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+            return (new Date(date - tzoffset)).toISOString().slice(0, 16);
+        }
+
+        // Default to today/now
+        const now = new Date();
+        startInput.value = formatDateTimeLocal(now);
+        
+        // Default Phase 1 and Finish to later today (1-day election)
+        const phase1 = new Date(now.getTime() + 2 * 60 * 60 * 1000); // +2 hours
+        phase1Input.value = formatDateTimeLocal(phase1);
+        
+        const finish = new Date(now.getTime() + 4 * 60 * 60 * 1000); // +4 hours
+        endInput.value = formatDateTimeLocal(finish);
+
+        // When start changes, sync others to the same day
+        startInput.addEventListener('change', function() {
+            if (this.value) {
+                const newStart = new Date(this.value);
+                const newPhase1 = new Date(newStart.getTime() + 2 * 60 * 60 * 1000);
+                phase1Input.value = formatDateTimeLocal(newPhase1);
+                
+                const newFinish = new Date(newStart.getTime() + 4 * 60 * 60 * 1000);
+                endInput.value = formatDateTimeLocal(newFinish);
+            }
+        });
+    }
+
+    const form = document.getElementById('initElectionForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('deployBtn');
+            const btnText = btn.querySelector('.btn-text');
+            const spinner = btn.querySelector('.spinner-border');
+            
+            // Disable button and show spinner
+            btn.disabled = true;
+            btnText.classList.add('opacity-50');
+            spinner.classList.remove('d-none');
+            
+            const formData = new FormData(form);
+            
+            fetch(form.action + '?ajax=1', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide form parts
+                    document.getElementById('initFormBody').classList.add('d-none');
+                    document.getElementById('initFormFooter').classList.add('d-none');
+                    document.querySelector('#initElectionModal .modal-header').classList.add('d-none');
+                    
+                    // Show success state
+                    document.getElementById('initSuccessText').innerText = data.message;
+                    document.getElementById('initSuccessState').classList.remove('d-none');
+                    
+                    // Trigger Lucide icons for the new state
+                    if (window.lucide) window.lucide.createIcons();
+                } else {
+                    alert('Error: ' + (data.message || 'Unknown error occurred'));
+                    btn.disabled = false;
+                    btnText.classList.remove('opacity-50');
+                    spinner.classList.add('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An unexpected error occurred. Please try again.');
+                btn.disabled = false;
+                btnText.classList.remove('opacity-50');
+                spinner.classList.add('d-none');
+            });
+        });
+    }
+});
+</script>
+
+<!-- Bulk Import Modal -->
+<div class="modal fade" id="bulkImportModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="{{ url_for('bulk_import') }}" method="POST" enctype="multipart/form-data" class="modal-content border-0 rounded-5 overflow-hidden">
+            <div class="modal-header bg-light p-4">
+                <h5 class="modal-title fw-bold">Census Synchronization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">MASTER CSV FILE</label>
+                    <input type="file" name="csv_file" class="form-control rounded-4" accept=".csv" required>
+                </div>
+                <div class="alert alert-info border-0 rounded-4 small">
+                    <i data-lucide="info" size="14" class="me-2"></i> Ensure CSV headers: ORG_ID, Name, email, PH.No, DOB, Department.
+                </div>
+            </div>
+            <div class="modal-footer p-4 bg-light border-0">
+                <button type="submit" class="btn btn-primary rounded-pill w-100 py-3 fw-bold">Start Database Sync</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Blockchain Upload Modal -->
+<div class="modal fade" id="uploadBlockchainModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="{{ url_for('verify_blockchain_upload') }}" method="POST" enctype="multipart/form-data" class="modal-content border-0 rounded-5 overflow-hidden shadow-lg">
+            <div class="modal-header bg-dark text-white p-4 border-0">
+                <h5 class="modal-title fw-bold">External Forensic Verification</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <p class="text-muted small mb-4">Select a <code>.json</code> blockchain export to perform a deep cryptographic audit against the platform's protocol rules.</p>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">BLOCKCHAIN ARCHIVE (JSON)</label>
+                    <input type="file" name="blockchain_file" class="form-control rounded-4 p-2" accept=".json" required>
+                </div>
+                <div class="alert alert-warning border-0 rounded-4 small py-3">
+                    <i data-lucide="shield-alert" size="18" class="me-2"></i>
+                    <strong>SECURITY PROTOCOL:</strong> This validation check includes Merkle Root verification and Signature Authenticity scan.
+                </div>
+            </div>
+            <div class="modal-footer p-4 bg-light border-0">
+                <button type="submit" class="btn btn-dark rounded-pill w-100 py-3 fw-bold shadow-sm">Execute Deep Audit</button>
+            </div>
+        </form>
+    </div>
+</div>

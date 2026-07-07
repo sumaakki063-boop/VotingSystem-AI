@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header text-center mb-5">
+    <div class="badge bg-white text-primary rounded-pill px-3 py-2 mb-3 fw-bold shadow-sm">
+        Phase 1: Candidate Selection
+    </div>
+    <h1 class="text-white">{{ election.title }}</h1>
+    <p class="text-white opacity-75">Nominate your preferred candidate by selecting their profile below.</p>
+    
+    <div class="d-inline-flex align-items-center gap-2 mt-4 px-4 py-2 bg-white bg-opacity-10 rounded-pill border border-white border-opacity-20 text-white">
+        <i data-lucide="clock" size="16"></i>
+        <span class="small fw-bold">Selection Ends in:</span>
+        <span class="countdown-timer fw-bold text-warning" data-end="{{ election.phase1_end.isoformat() if election.phase1_end else '' }}">Calculating...</span>
+    </div>
+</div>
+
+<form id="nominationForm" action="{{ url_for('vote', election_id=election.id) }}" method="POST">
+    <div class="row g-4 justify-content-center">
+        {% for candidate in candidates %}
+        <div class="col-md-6 col-lg-4">
+            <input type="radio" class="btn-check" name="nominee_id" id="cand{{ candidate.id }}" value="{{ candidate.id }}" required>
+            <label class="premium-card p-0 overflow-hidden" for="cand{{ candidate.id }}">
+                <div class="p-4 text-center">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-circle">
+                            <i data-lucide="award" size="24"></i>
+                        </div>
+                        {% if candidate.party_logo %}
+                            {% if 'http' in candidate.party_logo or 'www' in candidate.party_logo %}
+                                <img src="{{ candidate.party_logo }}" class="rounded shadow-sm" style="width: 44px; height: 44px; object-fit: cover;">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='uploads/' + candidate.party_logo) }}" class="rounded shadow-sm" style="width: 44px; height: 44px; object-fit: cover;">
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <h3 class="fw-bold mb-1">{{ candidate.name }}</h3>
+                    <div class="badge bg-light text-primary rounded-pill px-3 mb-3">{{ candidate.party_name if candidate.party_name else "Independent" }}</div>
+                    
+                    <div class="mb-4 text-muted small p-3 bg-light rounded-4 border border-dashed">
+                        "{{ candidate.manifesto[:100] }}..."
+                    </div>
+                    
+                    <div class="btn btn-outline-primary rounded-pill w-100 py-2 fw-bold select-indicator">
+                        Select for Nomination
+                    </div>
+                </div>
+            </label>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="premium-card text-center border-2 border-primary border-dashed bg-primary bg-opacity-5">
+                <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                    <i data-lucide="shield-check" class="text-primary" size="40"></i>
+                </div>
+                <h4 class="fw-bold">Security Verification Required</h4>
+                <p class="text-muted small mb-4">Your selection will be cryptographically hashed and synced with the Master Identity records.</p>
+                
+                <button type="submit" id="initNomBtn" class="btn btn-primary rounded-pill w-100 py-3 fw-bold shadow-lg">
+                    Confirm Selection & Submit
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Processing Overlay (Standardized for Premium UI) -->
+<div class="modal fade" id="securityOverlay" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 bg-dark text-white shadow-2xl">
+            <div class="modal-body p-5 text-center">
+                <div class="spinner-border text-primary mb-4" style="width: 3.5rem; height: 3.5rem;"></div>
+                <h3 class="fw-bold mb-4">Securing Vault</h3>
+                <div class="text-start mx-auto opacity-75 small" style="max-width: 320px;">
+                    <div id="layer1" class="mb-2 transition-all d-flex align-items-center gap-2"><div class="dot"></div> Identity & Eligibility Verified</div>
+                    <div id="layer2" class="mb-2 transition-all d-flex align-items-center gap-2"><div class="dot"></div> Symmetric Ballot Encryption (AES)</div>
+                    <div id="layer3" class="mb-2 transition-all d-flex align-items-center gap-2"><div class="dot"></div> Llama-3 Behavioral Audit...</div>
+                    <div id="layer4" class="mb-2 transition-all d-flex align-items-center gap-2"><div class="dot"></div> Generation of Tally Proof...</div>
+                </div>
+                <div class="mt-5 fw-bold text-primary" id="statusText">Initiating Security...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-check:checked + .premium-card { border: 2px solid var(--primary-purple) !important; background: var(--primary-light); }
+    .btn-check:checked + .premium-card .select-indicator { background: var(--primary-purple); color: white; }
+    .dot { width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; }
+    .layer-done { color: #10b981 !important; opacity: 1 !important; }
+    .layer-done .dot { background: #10b981; }
+    .layer-active { color: var(--primary-purple) !important; opacity: 1 !important; font-weight: 700; }
+    .layer-active .dot { background: var(--primary-purple); }
+</style>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('nominationForm');
+    const modal = new bootstrap.Modal(document.getElementById('securityOverlay'));
+    const statusText = document.getElementById('statusText');
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const selected = document.querySelector('input[name="nominee_id"]:checked');
+        if (!selected) { 
+            if(window.speakText) speakText("Please select a candidate first.");
+            alert('Please select a candidate first.'); 
+            return; 
+        }
+
+        modal.show();
+        
+        const layers = [
+            { id: 'layer1', text: 'Validating Identity...' },
+            { id: 'layer2', text: 'Encrypting Ballot...' },
+            { id: 'layer3', text: 'AI Forensic Check...' },
+            { id: 'layer4', text: 'Finalizing Proof...' }
+        ];
+
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i > 0) document.getElementById(layers[i-1].id).classList.add('layer-done');
+            if (i < layers.length) {
+                const el = document.getElementById(layers[i].id);
+                if(el) el.classList.add('layer-active');
+                statusText.innerText = layers[i].text;
+                i++;
+            } else {
+                clearInterval(interval);
+                statusText.innerText = "Nomination Secured!";
+                setTimeout(() => form.submit(), 800);
+            }
+        }, 1200);
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

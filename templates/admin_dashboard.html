@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header d-flex justify-content-between align-items-end">
+    <div>
+        <h1>Governance Dashboard</h1>
+        <p>Monitor real-time infrastructure and election cycles.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('blockchain_explorer') }}" class="btn btn-white bg-white text-dark rounded-4 fw-bold shadow-sm p-3 border-0">
+            <i data-lucide="binary" class="me-2 text-primary"></i> Forensic Explorer
+        </a>
+        <a href="{{ url_for('admin_verify_blockchain') }}" class="btn btn-white bg-white text-dark rounded-4 fw-bold shadow-sm p-3 border-0 ms-2">
+            <i data-lucide="shield-check" class="me-2 text-success"></i> Verify Ledger
+        </a>
+        <button class="btn btn-white bg-white text-dark rounded-4 fw-bold shadow-sm p-3 border-0 ms-2" data-bs-toggle="modal" data-bs-target="#bulkImportModal">
+            <i data-lucide="refresh-cw" class="me-2 text-info"></i> Census Sync
+        </button>
+        <button class="btn btn-white bg-white text-dark rounded-4 fw-bold shadow-sm p-3 border-0 ms-2" data-bs-toggle="modal" data-bs-target="#initElectionModal">
+            <i data-lucide="plus-circle" class="me-2 text-primary"></i> Deploy Cycle
+        </button>
+    </div>
+</div>
+
+<!-- Blockchain Status Hub -->
+<a href="{{ url_for('blockchain_explorer') }}" class="text-decoration-none d-block mb-4">
+    <div class="alert bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 d-flex align-items-center justify-content-between p-3 mb-0" style="cursor: pointer;">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-success text-white p-2 rounded-circle">
+                <i data-lucide="database" size="18"></i>
+            </div>
+            <div>
+                <p class="small fw-bold text-dark text-uppercase mb-1">Distributed Consensus State</p>
+                <div class="fw-bold text-dark">Blockchain Status: <span class="badge bg-success text-white rounded-pill px-2">SYNCED ⚙️</span> | Integrity: <span class="badge bg-success text-white rounded-pill px-2">VERIFIED ✅</span></div>
+            </div>
+        </div>
+        <div class="text-end">
+            <div class="small text-muted italic">Neural Ledger Sync: 100% Secure</div>
+            <div class="badge bg-success text-white" style="font-size: 0.6rem;">REAL-TIME PROTECTION ACTIVE</div>
+        </div>
+    </div>
+</a>
+
+<!-- Key Performance Metrics -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-3 col-md-6">
+        <div class="premium-card">
+            <div class="card-title-sm"><i data-lucide="users"></i> Verified Census</div>
+            <div class="stat-value">{{ total_census }}</div>
+            <div class="stat-trend neutral">Master Ledger records</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="premium-card">
+            <div class="card-title-sm text-danger"><i data-lucide="shield-alert"></i> Forensic Alerts</div>
+            <div class="stat-value text-danger">{{ fraud_count }}</div>
+            <div class="stat-trend positive">AI neutralized threats</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="premium-card">
+            <div class="card-title-sm"><i data-lucide="check-circle"></i> Integrity Score</div>
+            <div class="health-score">
+                <div class="score-num">100</div>
+                <div class="score-label">Secured</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="premium-card">
+            <div class="card-title-sm"><i data-lucide="vote"></i> Total Participation</div>
+            <div class="stat-value">{{ total_votes }}</div>
+            <div class="stat-trend positive">Verifiable ballots</div>
+        </div>
+    </div>
+</div>
+
+<!-- Identity Audit Queue (Widened for functionality) -->
+<div class="premium-card mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold m-0"><i data-lucide="user-check" class="me-2 text-primary"></i>Identity Audit Queue</h5>
+        <span class="badge bg-primary rounded-pill">{{ pending_users|length }} verification requests pending</span>
+    </div>
+    <div class="table-responsive">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>Member Identity</th>
+                    <th>Contact Vectors</th>
+                    <th>System Cross-Check</th>
+                    <th class="text-end">Forensic Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in pending_users %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="{{ url_for('static', filename='uploads/' + user.photo) }}" class="rounded-circle shadow-sm border" style="width: 50px; height: 50px; object-fit: cover;">
+                            <div>
+                                <div class="fw-bold text-primary">{{ user.name }}</div>
+                                <div class="small text-muted">ORG_ID: <code>{{ user.org_id }}</code></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="small fw-bold">{{ user.email }}</div>
+                        <div class="small text-muted">{{ user.phone }}</div>
+                    </td>
+                    <td>
+                        {% if user.system_record %}
+                            {% if user.system_record.full_name == user.name %}
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Master Match: OK</span>
+                            {% else %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">Name Mismatch</span>
+                            {% endif %}
+                            <div class="small text-muted mt-1">{{ user.system_record.department }}</div>
+                        {% else %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">Untraceable ID</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('approve_user', user_id=user.id) }}" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">PROVE</a>
+                            <a href="{{ url_for('reject_user', user_id=user.id) }}" class="btn btn-sm btn-outline-danger rounded-pill px-4 fw-bold" onclick="return confirm('Reject identity and purge registration cache?')">PURGE</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not pending_users %}
+                <tr><td colspan="4" class="text-center py-5 text-muted">No pending identity audits in the current quorum.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Active Election Cycles Section (Separated Cards) -->
+<!-- Active Election Cycles Section (Cards paired with Graphs) -->
+<h4 class="fw-bold mb-4 mt-5 d-flex align-items-center">
+    <i data-lucide="layers" class="me-2 text-primary"></i> Active Governance Cycles & Real-time Analytics
+</h4>
+
+{% for election in elections %}
+<div class="row g-4 mb-5">
+    <!-- Election Control Card -->
+    <div class="col-lg-4">
+        <div class="premium-card h-100 d-flex flex-column" style="min-height: 480px;">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h5 class="fw-bold m-0 mb-1">{{ election.title }}</h5>
+                    <span class="text-muted small">ID: #{{ election.id }} Deployment</span>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-{{ 'success' if election.status == 'active' else 'warning' }} rounded-pill mb-1 d-block">{{ election.status|upper }}</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill d-block">Phase {{ election.phase }}</span>
+                </div>
+            </div>
+            
+            <div class="participation-metric mb-4 p-3 bg-light rounded-4 border">
+                {% set turnout_pct = (election.p2_values|sum / approved_count * 100)|round(1) if approved_count > 0 else 0 %}
+                <div class="d-flex justify-content-between align-items-end mb-2">
+                    <div>
+                        <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.65rem;">Participation Hub</div>
+                        <div class="h4 fw-bold m-0">{{ turnout_pct }}%</div>
+                    </div>
+                    <div class="text-end text-muted small">
+                         {{ election.p2_values|sum }} / {{ approved_count }} Ballots
+                    </div>
+                </div>
+                <div class="custom-progress" style="height: 12px; background: rgba(0,0,0,0.05);">
+                    <div class="custom-progress-bar" style="--p: {{ turnout_pct }}%; width: var(--p); background: linear-gradient(90deg, var(--primary-purple), #a855f7);"></div>
+                </div>
+            </div>
+
+            <!-- Forensic and Management Hub -->
+            <div class="mt-auto">
+                <div class="card-title-sm mb-3">Governance & Forensic Ops</div>
+                
+                <!-- Group 1: Deep Analytics -->
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <a href="{{ url_for('results', election_id=election.id) }}" class="btn btn-sm btn-white border rounded-4 w-100 py-2 shadow-xs d-flex align-items-center justify-content-center gap-2">
+                            <i data-lucide="bar-chart-2" size="14"></i> Analytics
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('admin_audit_logs') }}" class="btn btn-sm btn-outline-danger border rounded-4 w-100 py-2 d-flex align-items-center justify-content-center gap-2">
+                            <i data-lucide="shield-alert" size="14"></i> Audit Hub
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Group 2: Lifecycle Controls -->
+                <div class="row g-2 mb-2">
+                    <div class="col-3">
+                        <a href="{{ url_for('toggle_election', election_id=election.id) }}" class="btn btn-sm btn-{{ 'warning' if election.status == 'active' else 'success' }} rounded-4 w-100 py-2" title="{{ 'Pause Cycle' if election.status == 'active' else 'Resume Cycle' }}">
+                            <i data-lucide="{{ 'pause' if election.status == 'active' else 'play' }}" size="14"></i>
+                        </a>
+                    </div>
+                    <div class="col-3">
+                        <a href="{{ url_for('switch_phase', election_id=election.id) }}" class="btn btn-sm btn-primary rounded-4 w-100 py-2" title="Advance to Next Phase">
+                            <i data-lucide="chevrons-right" size="14"></i>
+                        </a>
+                    </div>
+                    {% if election.phase == 2 %}
+                    <div class="col-3">
+                        <a href="{{ url_for('revert_phase', election_id=election.id) }}" class="btn btn-sm btn-light border rounded-4 w-100 py-2" title="Revert to Nomination">
+                            <i data-lucide="rotate-ccw" size="14"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                    <div class="col-{{ '3' if election.phase == 2 else '6' }}">
+                        <a href="{{ url_for('delete_election', election_id=election.id) }}" class="btn btn-sm btn-danger rounded-4 w-100 py-2" onclick="return confirm('ERASE DATA?')" title="Nuke Deployment">
+                            <i data-lucide="trash-2" size="14"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Group 3: Registry & Declaration -->
+                <div class="d-grid gap-2 border-top pt-3 mt-2">
+                    <button class="btn btn-sm btn-dark rounded-4 w-100 py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#addCandidate{{ election.id }}">
+                        <i data-lucide="user-plus" size="14" class="me-2"></i> Register Candidate
+                    </button>
+                    {% if election.is_declared %}
+                    <a href="{{ url_for('verify_audit_certificate', election_id=election.id) }}" class="btn btn-sm btn-success rounded-4 w-100 py-2 fw-bold mb-2">
+                        <i data-lucide="award" size="14" class="me-2"></i> View Official Certificate
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('verify_audit_certificate', election_id=election.id) }}" class="btn btn-sm btn-outline-success rounded-4 w-100 py-2 fw-bold mb-2">
+                        <i data-lucide="shield-check" size="14" class="me-2"></i> Real-time Integrity Check
+                    </a>
+                    {% endif %}
+                    {% if election.status == 'completed' or turnout_pct >= 0.1 %}
+                    {% if not election.is_declared %}
+                    <a href="{{ url_for('declare_winner', election_id=election.id) }}" class="btn btn-sm btn-success rounded-4 w-100 py-2 fw-bold">
+                        <i data-lucide="award" size="14" class="me-2"></i> Declare Sovereign Winner
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Live Analytic Distribution -->
+    <div class="col-lg-8">
+        <div class="premium-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="card-title-sm m-0"><i data-lucide="trending-up" class="me-2 text-primary"></i> Live Vote Distribution & Participation</div>
+                <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill">Real-time Stream</div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div style="height: 300px;">
+                        <canvas id="electionChart{{ election.id }}" 
+                                class="election-chart"
+                                data-labels="{{ (election.p2_labels if election.phase == 2 else election.p1_labels)|tojson }}"
+                                data-values="{{ (election.p2_values if election.phase == 2 else election.p1_values)|tojson }}"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div style="height: 300px;" class="d-flex flex-column align-items-center justify-content-center border-start ps-3">
+                        <div style="height: 180px; width: 100%;">
+                            <canvas id="turnoutChart{{ election.id }}" 
+                                    class="turnout-chart"
+                                    data-cast="{{ election.p2_values|sum }}"
+                                    data-remaining="{{ approved_count - election.p2_values|sum }}"></canvas>
+                        </div>
+                        <div class="text-center mt-3">
+                            <div class="small fw-bold text-muted">TURNOUT RATIO</div>
+                            <div class="h5 fw-bold text-primary mb-0">{{ turnout_pct }}%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Candidate Ingress Modal -->
+<div class="modal fade" id="addCandidate{{ election.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="{{ url_for('add_candidate', election_id=election.id) }}" method="POST" enctype="multipart/form-data" class="modal-content border-0 rounded-5 overflow-hidden shadow-lg">
+            <div class="modal-header bg-dark text-white p-4">
+                <h5 class="modal-title fw-bold">Candidate Ingress: {{ election.title }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">LEGAL NAME</label>
+                    <input type="text" name="name" class="form-control rounded-4 p-3 border-0 shadow-sm" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">OFFICIAL EMAIL</label>
+                    <input type="email" name="email" class="form-control rounded-4 p-3 border-0 shadow-sm" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">EDUCATION & BIO</label>
+                    <textarea name="education" class="form-control rounded-4 p-3 border-0 shadow-sm" rows="2"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">MANIFESTO PILLARS</label>
+                    <textarea name="manifesto" class="form-control rounded-4 p-3 border-0 shadow-sm" rows="3" placeholder="AI analysis will be performed on these promises..."></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">PARTY IDENTITY</label>
+                    <input type="text" name="party_name" class="form-control rounded-4 p-3 border-0 shadow-sm" placeholder="e.g. Democratic Alliance">
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">SYMBOL (FILE)</label>
+                        <input type="file" name="party_logo_file" class="form-control rounded-4 p-2 border-0 shadow-sm bg-white" accept="image/*">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">SYMBOL (URL)</label>
+                        <input type="text" name="party_logo_url" class="form-control rounded-4 p-3 border-0 shadow-sm" placeholder="https://...">
+                    </div>
+                </div>
+                <div class="mt-2 text-center">
+                    <span class="text-muted small italic" style="font-size: 0.7rem;">Note: File upload takes priority over URL.</span>
+                </div>
+            </div>
+            <div class="modal-footer p-4 bg-light border-0">
+                <button type="submit" class="btn btn-dark rounded-pill w-100 py-3 fw-bold shadow-sm">Finalize Candidate Injection</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% if not elections %}
+<div class="premium-card text-center py-5 mb-5">
+    <i data-lucide="calendar-off" class="text-muted mb-3" size="32"></i>
+    <p class="text-muted small">No active election cycles detected in the current governance layer.</p>
+</div>
+{% endif %}
+
+<!-- Forensic Sovereign Ledger (Segmented by Election) -->
+<h4 class="fw-bold mb-4 mt-5 d-flex align-items-center">
+    <i data-lucide="database" class="me-2 text-primary"></i> Forensic Sovereign Ledger
+</h4>
+
+{% for election in elections %}
+<div class="premium-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h6 class="fw-bold m-0" style="color: var(--primary-purple);">Deployment: {{ election.title }} (Audit Stream)</h6>
+        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Verified Nodes Active</span>
+    </div>
+    <div class="table-responsive">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>Identity Hash (Anonymized)</th>
+                    <th>Persistence Key (PGK)</th>
+                    <th>Ballot Timestamp</th>
+                    <th class="text-center">Integrity Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set found_records = false %}
+                {% for record in audit_ledger %}
+                    {% if record.election_id == election.id %}
+                    {% set found_records = true %}
+                    <tr>
+                        <td><code class="text-primary small">{{ record.user_hash[:32] }}...</code></td>
+                        <td><span class="badge bg-light border text-dark font-monospace">{{ record.unique_key }}</span></td>
+                        <td class="small text-muted">{{ record.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="text-center"><span class="text-success small fw-bold"><i data-lucide="shield-check" size="14"></i> IMMUTABLE</span></td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                {% if not found_records %}
+                <tr><td colspan="4" class="text-center py-5 text-muted small italic">No immutable ballot records found for this deployment.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Global/Orphan Ledger Records (Audit Integrity) -->
+<div class="premium-card mb-5">
+    <div class="card-title-sm mb-4 text-muted">System Infrastructure Logs (Non-Election / Orphan Tags)</div>
+    <div class="table-responsive">
+        <table class="premium-table small">
+            <thead>
+                <tr>
+                    <th class="opacity-50">Identity Hash</th>
+                    <th class="opacity-50">Context</th>
+                    <th class="opacity-50 text-end">Integrity Check</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set global_found = false %}
+                {% for record in audit_ledger %}
+                    {% set is_orphan = true %}
+                    {% for e in elections %}
+                        {% if e.id == record.election_id %}{% set is_orphan = false %}{% endif %}
+                    {% endfor %}
+                    
+                    {% if is_orphan %}
+                    {% set global_found = true %}
+                    <tr>
+                        <td class="text-muted">{{ record.user_hash[:16] }}...</td>
+                        <td class="text-muted">{{ record.election_title if record.election_title else 'System-Wide Integrity' }}</td>
+                        <td class="text-end text-success fw-bold">SECURED</td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                {% if not global_found %}
+                <tr><td colspan="3" class="text-center text-muted small">No orphan records in global state.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Initialization Modals -->
+{% include "_modals.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Welcome Summary Text Definition
+        const summaryText = "Welcome to the Governance Dashboard. You have {{ total_census }} members in the census. {{ fraud_count }} forensic alerts have been neutralized by the AI shield. Currently monitoring {{ elections|length }} active cycles.";
+
+        // Automatic Welcome (Only once per session)
+        if (!sessionStorage.getItem('admin_welcomed')) {
+            setTimeout(() => {
+                if (typeof speakText === 'function') speakText(summaryText);
+                sessionStorage.setItem('admin_welcomed', 'true');
+            }, 1000);
+        }
+
+        // Manual Re-play Trigger
+        const replayBtn = document.getElementById('replayVoiceBtn');
+        if (replayBtn) {
+            replayBtn.addEventListener('click', () => {
+                if (typeof speakText === 'function') speakText(summaryText);
+            });
+        }
+
+        const colors = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
+        
+        // Initialize Main Distribution Charts
+        document.querySelectorAll('.election-chart').forEach(canvas => {
+            try {
+                const ctx = canvas.getContext('2d');
+                const labels = JSON.parse(canvas.dataset.labels || '[]');
+                const values = JSON.parse(canvas.dataset.values || '[]');
+                
+                // Create Premium Gradient
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(124, 58, 237, 0.85)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0.5)');
+
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Ballots Cast',
+                            data: values,
+                            backgroundColor: gradient,
+                            borderColor: '#7c3aed',
+                            borderWidth: 2,
+                            borderRadius: 12,
+                            hoverBackgroundColor: '#7c3aed'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1e293b',
+                                titleFont: { size: 13, weight: 'bold' },
+                                bodyFont: { size: 12 },
+                                padding: 12,
+                                cornerRadius: 8
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true, 
+                                grid: { color: 'rgba(0,0,0,0.03)' },
+                                ticks: { stepSize: 1, color: '#64748b', font: { weight: 'bold' } }
+                            },
+                            x: { grid: { display: false }, ticks: { color: '#64748b', font: { weight: 'bold' } } }
+                        }
+                    }
+                });
+            } catch (e) { console.error("Error initializing chart", e); }
+        });
+
+        // Initialize Turnout Doughnut Charts
+        document.querySelectorAll('.turnout-chart').forEach(canvas => {
+            const cast = parseInt(canvas.dataset.cast);
+            const remaining = parseInt(canvas.dataset.remaining);
+            
+            new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cast', 'Pending'],
+                    datasets: [{
+                        data: [cast, remaining < 0 ? 0 : remaining],
+                        backgroundColor: ['#7c3aed', '#f1f5f9'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    cutout: '75%',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

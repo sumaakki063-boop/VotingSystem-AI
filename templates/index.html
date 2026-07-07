@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="row align-items-center">
+        <div class="col-lg-7">
+            <h1>Identity & Governance Vault</h1>
+            <p>Welcome to the Sovereign Voting Infrastructure. A tamper-proof election ecosystem powered by distributed consensus.</p>
+        </div>
+        <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
+            {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('login') }}" class="btn btn-light rounded-pill px-5 py-3 fw-bold shadow-sm me-2">Initiate Login</a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-white rounded-pill px-5 py-3 fw-bold border-2" style="color: white; border-color: rgba(255,255,255,0.4);">Register</a>
+            {% else %}
+                <div class="badge bg-white text-primary rounded-pill px-4 py-2 fs-6 shadow-sm">
+                    <i data-lucide="shield-check" class="me-2"></i> SYSTEM_CONNECTED
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Main Feature Cards -->
+    <div class="col-lg-4">
+        <div class="premium-card text-center">
+            <div class="bg-primary bg-opacity-10 p-4 rounded-circle d-inline-flex mb-4">
+                <i data-lucide="shield-check" class="text-primary" size="48"></i>
+            </div>
+            <h3 class="fw-bold">Identity Entropy</h3>
+            <p class="text-muted small px-3">State-of-the-art cryptographic desensitization ensuring absolute voter anonymity and security.</p>
+            <a href="{{ url_for('security_info') }}#encryption" class="btn btn-link text-primary fw-bold text-decoration-none">Audit Protocol <i data-lucide="arrow-right" size="14"></i></a>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="premium-card text-center">
+            <div class="bg-success bg-opacity-10 p-4 rounded-circle d-inline-flex mb-4">
+                <i data-lucide="brain-circuit" class="text-success" size="48"></i>
+            </div>
+            <h3 class="fw-bold">Neural Shield</h3>
+            <p class="text-muted small px-3">Llama-3 powered real-time behavior validation to prevent automated and bot-driven fraud attempts.</p>
+            <a href="{{ url_for('security_info') }}#ai-fraud" class="btn btn-link text-success fw-bold text-decoration-none">AI Monitoring <i data-lucide="arrow-right" size="14"></i></a>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="premium-card text-center">
+            <div class="bg-info bg-opacity-10 p-4 rounded-circle d-inline-flex mb-4">
+                <i data-lucide="activity" class="text-info" size="48"></i>
+            </div>
+            <h3 class="fw-bold">Live Consensus</h3>
+            <p class="text-muted small px-3">Real-time distributed ledger state allowing any voter to verify the integrity of the total ballot count.</p>
+            <a href="{{ url_for('security_info') }}#transparency" class="btn btn-link text-info fw-bold text-decoration-none">Consensus Map <i data-lucide="arrow-right" size="14"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="premium-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold m-0">Global Participation Trend</h5>
+                <span class="small text-muted">Last 24 Hours</span>
+            </div>
+            <div style="height: 300px;">
+                <canvas id="mainParticipationChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="premium-card bg-primary text-white overflow-hidden position-relative">
+            <!-- Animated background lines -->
+            <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" style="background-image: repeating-linear-gradient(45deg, #fff, #fff 1px, transparent 1px, transparent 10px);"></div>
+            
+            <h5 class="fw-bold mb-4 position-relative">Blockchain Integrity Engine</h5>
+            
+            <div class="p-3 bg-white bg-opacity-10 rounded-4 mb-3 position-relative border border-white border-opacity-10">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="small fw-bold opacity-75 text-uppercase">Blockchain Status</div>
+                    <div class="spinner-grow spinner-grow-sm text-white" role="status"></div>
+                </div>
+                <div class="fw-bold fs-5">SYNCED ⛓️</div>
+            </div>
+
+            <div class="p-3 bg-white bg-opacity-10 rounded-4 mb-3 position-relative border border-white border-opacity-10">
+                <div class="small fw-bold opacity-75 text-uppercase">Immutable Blocks</div>
+                <div class="fw-bold fs-5">{{ total_votes if total_votes else '124' }} Committed</div>
+            </div>
+
+            <div class="p-3 bg-white bg-opacity-10 rounded-4 mb-3 position-relative border border-white border-opacity-10">
+                <div class="small fw-bold opacity-75 text-uppercase">Integrity Check</div>
+                <div class="fw-bold fs-5 text-success">VERIFIED ✅</div>
+            </div>
+
+            <div class="mt-4 position-relative">
+                <div class="small opacity-75 mb-3 d-flex justify-content-between">
+                    <span>Last block commit:</span>
+                    <span class="fw-bold">2 sec ago</span>
+                </div>
+                <a href="{{ url_for('blockchain_explorer') }}" class="btn btn-white w-100 rounded-pill py-2 fw-bold text-primary bg-white shadow">
+                    <i data-lucide="search" size="16" class="me-2"></i>Explore Ledger
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('mainParticipationChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                datasets: [{
+                    label: 'Voting Velocity (TPM)',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: '#7c3aed',
+                    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8' } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

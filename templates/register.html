@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Hide sidebar and adjust margin for registration page */
+    .app-sidebar { display: none !important; }
+    .main-wrapper { margin-left: 0 !important; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at top right, #3b82f6, #6366f1); padding: 3rem 1rem; }
+    .auth-container { width: 100%; max-width: 600px; }
+</style>
+
+<div class="auth-container">
+    <div class="premium-card p-5 shadow-2xl border-0">
+        <div class="text-center mb-5">
+            <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                <i data-lucide="user-plus" class="text-primary" size="40"></i>
+            </div>
+            <h2 class="fw-bold text-primary">Identity Registration</h2>
+            <p class="text-muted small">Submit your credentials for cryptographic verification.</p>
+        </div>
+        
+        <form action="{{ url_for('register') }}" method="POST" enctype="multipart/form-data">
+            <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Full Legal Name</label>
+                    <input type="text" name="name" class="form-control rounded-4 p-3 border-2" placeholder="John Doe" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Organization ID</label>
+                    <input type="text" name="org_id" class="form-control rounded-4 p-3 border-2" placeholder="ORG_001" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Official Email</label>
+                    <input type="email" name="email" class="form-control rounded-4 p-3 border-2" placeholder="email@org.com" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Mobile Contact</label>
+                    <input type="tel" name="phone" class="form-control rounded-4 p-3 border-2" placeholder="+123456789" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Date of Birth</label>
+                    <input type="date" name="dob" class="form-control rounded-4 p-3 border-2" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Gender Identification</label>
+                    <select name="gender" class="form-select rounded-4 p-3 border-2" required>
+                        <option value="" selected disabled>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other / Prefer not to say</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Identity Password</label>
+                    <input type="password" name="password" class="form-control rounded-4 p-3 border-2" placeholder="••••••••" required>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Identity Document (Image)</label>
+                    <input type="file" name="photo" class="form-control rounded-4 p-2 border-2" accept="image/*" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary rounded-pill w-100 py-3 fw-bold shadow-lg mt-3">
+                Request Identity Audit
+            </button>
+            
+            <div class="text-center mt-4">
+                <p class="small text-muted mb-0">Existing identity detected? <a href="{{ url_for('login') }}" class="text-primary text-decoration-none fw-bold">Sign In</a></p>
+            </div>
+
+            <div class="hr-text text-muted my-3 small fw-bold text-uppercase" style="display: flex; align-items: center; text-align: center;">
+                <span style="flex-grow: 1; border-bottom: 1px solid #eee; margin-right: 10px;"></span>
+                OR
+                <span style="flex-grow: 1; border-bottom: 1px solid #eee; margin-left: 10px;"></span>
+            </div>
+
+            <div class="text-center">
+                <a href="{{ url_for('index') }}" class="btn btn-light rounded-pill w-100 py-3 fw-bold border text-primary">
+                    <i data-lucide="home" class="me-2 text-primary" size="18"></i> Back to Home Portal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

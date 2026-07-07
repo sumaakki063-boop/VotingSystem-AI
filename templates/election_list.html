@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header d-flex justify-content-between align-items-end">
+    <div>
+        <h1>Election Records</h1>
+        <p>Your portal to active and historical democratic cycles.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for election in elections %}
+    <div class="col-lg-6 col-xl-4">
+        <div class="premium-card">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-bold">
+                    Phase {{ election.phase }} Deployment
+                </div>
+                {% if election.status == 'active' %}
+                    <div class="spinner-grow text-success" style="width: 12px; height: 12px;"></div>
+                {% endif %}
+            </div>
+            
+            <h3 class="fw-bold mb-2">{{ election.title }}</h3>
+            <p class="text-muted small mb-4">
+                <i data-lucide="info" size="14" class="me-1"></i>
+                {% if election.phase == 1 %}
+                    Nomination phase is currently open. Submit your candidate support.
+                {% else %}
+                    Final ballot phase. Cast your vote securely.
+                {% endif %}
+                {% if election.candidates|length == 0 %}
+                    <br><span class="text-danger fw-bold"><i data-lucide="alert-triangle" size="14"></i> No candidates registered for this phase.</span>
+                {% endif %}
+            </p>
+
+            {% if election.is_declared and winners_map.get(election.id) %}
+                <div class="winner-announcement p-3 mb-4 rounded-4 text-center border shadow-sm" style="background: linear-gradient(135deg, #fffbeb 0%, #fff 100%);">
+                    <div class="badge bg-warning text-dark mb-2 rounded-pill px-3 fw-bold">OFFICIAL WINNER</div>
+                    <h4 class="fw-bold text-dark m-0">{{ winners_map[election.id].name }}</h4>
+                    <p class="small text-muted mb-0">{{ winners_map[election.id].party_name }}</p>
+                </div>
+            {% endif %}
+
+            <div class="p-3 bg-light rounded-4 mb-4 border">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold text-muted text-uppercase">Window Expiry</span>
+                    <span class="badge bg-white shadow-sm text-primary rounded-pill border">Live</span>
+                </div>
+                {% set target_date = election.end_date if election.phase == 2 else election.phase1_end %}
+                <div class="h5 fw-bold m-0 countdown-timer text-primary" data-end="{{ target_date.isoformat() if target_date else '' }}">
+                    Calculating...
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                {% if election.status == 'active' %}
+                    {% set has_voted = (election.phase == 1 and election.id in voted_phase1_ids) or (election.phase == 2 and election.id in voted_phase2_ids) %}
+                    
+                    {% if not has_voted %}
+                        <a href="{{ url_for('vote', election_id=election.id) }}" class="btn btn-primary rounded-pill py-3 fw-bold shadow">
+                            <i data-lucide="send" class="me-2"></i> Enter Voting Vault
+                        </a>
+                    {% else %}
+                        <button class="btn btn-success rounded-pill py-3 fw-bold shadow-sm disabled" style="background-color: #10b981; border-color: #059669; opacity: 1; cursor: default;">
+                            <i data-lucide="check-circle" class="me-2"></i> Vote Successfully Logged
+                        </button>
+                    {% endif %}
+                {% elif election.status == 'completed' %}
+                    {% if election.is_declared %}
+                        <div class="btn btn-dark rounded-pill py-3 fw-bold shadow-sm disabled" style="opacity: 1;">
+                            <i data-lucide="award" class="me-2 text-warning"></i> Election Concluded
+                        </div>
+                    {% else %}
+                        <button class="btn btn-light border rounded-pill py-3 fw-bold text-muted" disabled>Under Forensic Audit</button>
+                    {% endif %}
+                {% else %}
+                    <button class="btn btn-light border rounded-pill py-3 fw-bold text-muted" disabled>Election Suspended</button>
+                {% endif %}
+                
+                <a href="{{ url_for('results', election_id=election.id) }}" class="btn btn-link text-decoration-none text-muted small fw-bold mt-2">
+                    <i data-lucide="bar-chart-2" size="14" class="me-1"></i> View Live Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not elections %}
+    <div class="col-12">
+        <div class="premium-card text-center py-5">
+            <div class="bg-primary bg-opacity-10 p-4 rounded-circle d-inline-flex mb-4">
+                <i data-lucide="calendar-x" class="text-primary" size="48"></i>
+            </div>
+            <h2 class="fw-bold">No Active Elections</h2>
+            <p class="text-muted">Stay tuned. The administration will notify you once a new cycle begins.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

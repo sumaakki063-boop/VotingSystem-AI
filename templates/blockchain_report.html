@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-5 no-print-background">
+    <div class="report-paper p-5 shadow-lg bg-white text-dark mx-auto" style="max-width: 1000px; border: 1px solid #ddd;">
+        <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4">
+            <div>
+                <h1 class="display-6 fw-bold text-uppercase mb-0">Blockchain Forensic Report</h1>
+                <p class="text-muted small">SECUREVOTE AI - DISTRIBUTED LEDGER AUTO-GENERATED SUMMARY</p>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-dark text-white p-2 mb-2">CONFIDENTIAL AUDIT</div>
+                <div class="small text-muted">Generated: {{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}</div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="p-3 bg-light rounded border">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-1">Network Integrity Status</label>
+                    <div class="h5 mb-0 {% if integrity_status %}text-success{% else %}text-danger{% endif %}">
+                        <i class="fas {% if integrity_status %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %} me-2"></i>
+                        {% if integrity_status %}VERIFIED: SECURE{% else %}TAMPERING DETECTED{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="p-3 bg-light rounded border">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-1">Total Ledger Depth</label>
+                    <div class="h5 mb-0 text-dark">{{ chain|length }} Validated Blocks</div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="p-3 bg-light rounded border">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-1">Chain Merkle Root (Global Proof)</label>
+                    <code class="small text-primary break-all">{{ root_hash }}</code>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="fw-bold mb-3 border-bottom pb-2">Full Immutable Ledger Stream</h4>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle" style="font-size: 0.8rem;">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 60px;">Index</th>
+                        <th>Timestamp</th>
+                        <th>Block Hash (SHA-256)</th>
+                        <th>Previous Hash</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for block in chain %}
+                    <tr>
+                        <td class="fw-bold">#{{ block.index }}</td>
+                        <td>{{ block.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td><code class="text-dark small">{{ block.hash }}</code></td>
+                        <td><code class="text-muted small">{{ block.previous_hash[:16] }}...</code></td>
+                        <td>
+                            <span class="badge bg-success-soft text-success border border-success px-2">
+                                <i class="fas fa-lock me-1"></i>VERIFIED
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-5 pt-5 border-top text-center text-muted small">
+            <p>This report is cryptographically linked to the SecureVote AI network. Any modification to this paper record without matching digital signatures is considered fraudulent.</p>
+            <div class="d-flex justify-content-center gap-5 mt-4">
+                <div class="text-center">
+                    <div class="border-bottom mx-auto mb-1" style="width: 150px;"></div>
+                    <span>System Auditor</span>
+                </div>
+                <div class="text-center">
+                    <div class="border-bottom mx-auto mb-1" style="width: 150px;"></div>
+                    <span>Network Witness</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4 no-print">
+        <button onclick="window.print()" class="btn btn-primary btn-lg rounded-pill shadow-lg px-5">
+            <i class="fas fa-print me-2"></i>Download Internal Report
+        </button>
+    </div>
+</div>
+
+<style>
+    .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
+    .break-all { word-break: break-all; }
+    @media print {
+        .no-print, nav, footer, .mobile-top-bar { display: none !important; }
+        body { background: white !important; margin: 0 !important; padding: 0 !important; }
+        .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        .report-paper { border: none !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; }
+        .no-print-background { background: none !important; }
+    }
+</style>
+{% endblock %}

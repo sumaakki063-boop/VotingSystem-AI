@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-5 no-print-background">
+    <div class="report-paper p-5 shadow-lg bg-white text-dark mx-auto" style="max-width: 1000px; border: 2px solid #333;">
+        <!-- Header -->
+        <div class="row align-items-center mb-5 border-bottom pb-4">
+            <div class="col-8">
+                <h1 class="display-3 fw-bold text-uppercase mb-0" style="letter-spacing: 2px; color: #1a1a1a;">Election Archive</h1>
+                <h5 class="text-secondary text-uppercase fw-bold mt-1">Permanent Regulatory Ledger Record</h5>
+            </div>
+            <div class="col-4 text-end">
+                <div class="badge bg-dark p-2 px-3 rounded-0 text-uppercase fw-bold" style="letter-spacing: 1px;">
+                    Official Document
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-5 g-4">
+            <div class="col-md-7">
+                <div class="p-4 border border-2 border-dark h-100">
+                    <h5 class="fw-bold text-uppercase mb-4">Deployment Specifications</h5>
+                    <table class="table table-borderless table-sm mb-0">
+                        <tr><td class="text-muted fw-bold" style="width: 150px;">TITLE:</td><td class="fw-bold">{{ election.title }}</td></tr>
+                        <tr><td class="text-muted fw-bold">NETWORK ID:</td><td class="font-monospace">#SV-{{ election.id }}</td></tr>
+                        <tr><td class="text-muted fw-bold">ARCHIVE DATE:</td><td class="fw-bold">{{ timestamp.strftime('%B %d, %Y') }}</td></tr>
+                        <tr><td class="text-muted fw-bold">INTEGRITY:</td><td>
+                            <span class="badge {% if integrity_status %}bg-success{% else %}bg-danger{% endif %} rounded-0">
+                                {% if integrity_status %}CRYPTO-SECURED{% else %}UNVERIFIED{% endif %}
+                            </span>
+                        </td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="p-4 bg-dark text-white h-100 d-flex flex-column justify-content-center">
+                    <div class="small fw-bold opacity-75 mb-1 text-uppercase">Total Verified Ballots</div>
+                    <div class="display-4 fw-bold mb-0">{{ total_votes }}</div>
+                    <div class="small text-success fw-bold">100% IMMUTABLE LEDGER</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Official Tally -->
+        <div class="mb-5">
+            <h4 class="fw-bold text-uppercase mb-4 border-bottom border-3 border-dark pb-2">Official Final Tally</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered border-dark">
+                    <thead class="bg-light">
+                        <tr class="text-uppercase small fw-bold">
+                            <th>Candidate Identity</th>
+                            <th class="text-center">Total Ballots</th>
+                            <th class="text-center" style="width: 250px;">Percentage</th>
+                            <th>Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody class="align-middle">
+                        {% for res in results %}
+                        <tr>
+                            <td class="fw-bold">{{ res.name }}</td>
+                            <td class="text-center h5 mb-0 font-monospace">{{ res.votes }}</td>
+                            <td class="text-center">
+                                <div class="fw-bold mb-1">{{ res.percentage }}%</div>
+                                <div class="progress rounded-0 border border-dark" style="height: 12px; background: #eee;">
+                                    <div class="progress-bar bg-dark" style="--pg-width: {{ res.percentage | float }}%; width: var(--pg-width);"></div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if res.percentage == (results|map(attribute='percentage')|max) %}
+                                <span class="fw-bold text-uppercase"><i class="fas fa-check-circle me-1"></i>Elected</span>
+                                {% else %}
+                                <span class="text-muted text-uppercase small">Participated</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Forensic Proof Slices -->
+        <div class="mb-5">
+            <h4 class="fw-bold text-uppercase mb-3 border-bottom pb-2">Forensic Registry Samples</h4>
+            <p class="small text-muted mb-3">The following blocks represent the final 20 transactions in the immutable ledger for this cycle.</p>
+            <div class="p-3 bg-dark text-light rounded font-monospace small" style="max-height: 300px; overflow-y: auto;">
+                {% for block in chain %}
+                <div class="mb-2 border-bottom border-secondary pb-1">
+                    <span class="text-success">[BLOCK_{{ block.index }}]</span> 
+                    <span class="text-warning">HASH:</span> {{ block.hash[:32] }}...
+                    <span class="text-info">SIG:</span> VERIFIED
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="row pt-5 mt-5">
+            <div class="col-6">
+                <div class="signature-line w-100 mb-4">
+                    <div class="border-bottom border-dark py-3 mb-1"></div>
+                    <label class="small fw-bold text-muted">SECUREVOTE AI ALGORITHM SEAL</label>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="signature-line w-100 mb-4">
+                    <div class="border-bottom border-dark py-3 mb-1"></div>
+                    <label class="small fw-bold text-muted">CHIEF GOVERNANCE AUDITOR</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <img src="https://img.icons8.com/color/48/000000/qr-code.png" alt="QR Verify" class="opacity-50">
+            <p class="text-muted" style="font-size: 0.6rem;">This document is an official export of the SecureVote AI Network. It serves as a permanent legal record of the election cycle conducted on {{ timestamp.strftime('%Y-%m-%d') }}.</p>
+        </div>
+    </div>
+
+    <div class="text-center mt-4 no-print">
+        <button onclick="window.print()" class="btn btn-dark btn-lg rounded-pill shadow-lg px-5">
+            <i class="fas fa-file-pdf me-2"></i>Export Final Archive (Official)
+        </button>
+    </div>
+</div>
+
+<style>
+    @media print {
+        /* Hide UI Elements */
+        .no-print, nav, footer, .app-sidebar, .mobile-top-bar, .flash-msg-read, .sidebar-brand { display: none !important; }
+        
+        /* Reset Layout for Print */
+        body { background: white !important; margin: 0 !important; padding: 0 !important; color: black; }
+        .main-wrapper { margin-left: 0 !important; padding: 0 !important; background: white !important; }
+        .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        
+        /* Report Container Optimization */
+        .report-paper { 
+            border: 2px solid #333 !important; 
+            box-shadow: none !important; 
+            width: 100% !important; 
+            max-width: 100% !important; 
+            margin: 0 !important;
+            padding: 30px !important;
+        }
+
+        /* Ensure Table Headers break correctly */
+        table { page-break-inside: auto; width: 100%; border-collapse: collapse; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+
+        /* Avoid breaking sections in half */
+        .signature-line, .forensic-registry { page-break-inside: avoid; }
+        h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }
+
+        /* Color Adjustments for standard printers */
+        .bg-dark { background-color: #333 !important; color: white !important; }
+        .bg-light { background-color: #f8f9fa !important; border: 1px solid #ddd !important; }
+        .text-muted { color: #666 !important; }
+        .border-dark { border-color: #333 !important; }
+        
+        @page { 
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        /* Forensic list visibility */
+        div[style*="max-height"] {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+    }
+</style>
+{% endblock %}

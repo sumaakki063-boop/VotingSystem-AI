@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Security & Transparency</h1>
+        <p class="lead text-muted">How we protect your vote with state-of-the-art technology.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Section 1: Identity Section -->
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-lg p-5">
+                <h2 class="fw-bold mb-4 d-flex align-items-center">
+                    <i data-lucide="users" class="text-primary me-3" size="32"></i>
+                    Foundation: Identity & Verification
+                </h2>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 h-100">
+                            <h6 class="fw-bold text-primary">Master ID Synchronization</h6>
+                            <p class="small text-muted mb-0">Active cross-verification with the organization's primary Oracle/SQLite database to prevent unauthorized registration.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 h-100">
+                            <h6 class="fw-bold text-primary">Multi-Factor Verification</h6>
+                            <p class="small text-muted mb-0">Dual-channel authentication using Google SMTP for secure, time-sensitive verification of voter credentials.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 h-100">
+                            <h6 class="fw-bold text-primary">Administrative Identity Audit</h6>
+                            <p class="small text-muted mb-0">Stringent manual verification by election commissioners comparing registration data with high-integrity master records.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Voting Engine -->
+        <div class="col-lg-6" id="encryption">
+            <div class="card border-0 shadow-lg p-5 h-100 bg-dark text-white">
+                <h3 class="fw-bold mb-3 border-bottom pb-3 border-secondary">The Secure Voting Engine</h3>
+                <ul class="list-unstyled">
+                    <li class="mb-3 d-flex align-items-start">
+                        <i data-lucide="check-circle" class="text-info me-2 mt-1" size="18"></i>
+                        <div>
+                            <strong>Mandatory Eligibility Validation:</strong> Strict age and status checks enforced via algorithmic constraints at the database level.
+                        </div>
+                    </li>
+                    <li class="mb-3 d-flex align-items-start">
+                        <i data-lucide="lock" class="text-info me-2 mt-1" size="18"></i>
+                        <div>
+                            <strong>AES-256 Symmetric Encryption:</strong> Military-grade ballot confidentiality using the Fernet specification.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 3: AI Intelligence -->
+        <div class="col-lg-6" id="ai-fraud">
+            <div class="card border-0 shadow-lg p-5 h-100 bg-primary text-white">
+                <h3 class="fw-bold mb-3 border-bottom pb-3 border-white opacity-50">Behavioral Intelligence</h3>
+                <ul class="list-unstyled">
+                    <li class="mb-3 d-flex align-items-start">
+                        <i data-lucide="brain" class="text-warning me-2 mt-1" size="18"></i>
+                        <div>
+                            <strong>Behavioral Pattern Analysis:</strong> Real-time anomaly detection using Llama 3 to identify and flag automated bot-like voting velocity.
+                        </div>
+                    </li>
+                    <li class="mb-3 d-flex align-items-start">
+                        <i data-lucide="file-text" class="text-warning me-2 mt-1" size="18"></i>
+                        <div>
+                            <strong>Cryptographic Tally Proof:</strong> Generation of immutable transaction receipts ensuring total transparency and auditability.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <!-- Section 4: Transparency -->
+        <div class="col-12 mt-4" id="transparency">
+            <div class="card border-0 shadow-sm p-4 bg-light">
+                <h4 class="fw-bold mb-3 text-secondary">Public Auditability & Transparency</h4>
+                <p class="mb-0 text-muted">Every election on SecureVote AI generates a cryptographic audit trail. Voters receive unique transaction IDs that can be verified against the public tally without compromising individual ballot privacy.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Hide sidebar and adjust for centering */
+    .app-sidebar, .mobile-top-bar { display: none !important; }
+    .main-wrapper { 
+        margin-left: 0 !important; 
+        padding: 0 !important; 
+        background: radial-gradient(circle at top right, #7c3aed, #4f46e5); 
+    }
+</style>
+
+<div class="auth-page">
+    <div class="auth-container">
+    <div class="premium-card p-5 shadow-2xl border-0">
+        <div class="text-center mb-5">
+            <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                <i data-lucide="shield-check" class="text-primary" size="40"></i>
+            </div>
+            <h2 class="fw-bold text-primary">Sovereign Login</h2>
+            <p class="text-muted small">Establish a secure session to the Governance Engine.</p>
+        </div>
+        
+        <form action="{{ url_for('login') }}" method="POST">
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Name / Identity Hash / Email</label>
+                <input type="text" name="identifier" class="form-control rounded-4 p-3 border-2" placeholder="Name, Member ID, or Email" required>
+            </div>
+
+            <div class="mb-5">
+                <label class="form-label small fw-bold text-muted text-uppercase">Access Key / Password</label>
+                <input type="password" name="password" class="form-control rounded-4 p-3 border-2" placeholder="••••••••">
+                <div class="p-3 bg-light rounded-4 mt-3 small text-muted">
+                    <i data-lucide="info" size="14" class="me-1"></i>
+                    Voters will receive a One-Time Password (OTP) via their registered email.
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary rounded-pill w-100 py-3 fw-bold shadow-lg">
+                Initiate Secure Session
+            </button>
+            
+            <div class="text-center mt-4">
+                <p class="small text-muted mb-0">Awaiting access? <a href="{{ url_for('register') }}" class="text-primary text-decoration-none fw-bold">Register Identity</a></p>
+            </div>
+            
+            <div class="hr-text text-muted my-3 small fw-bold text-uppercase" style="display: flex; align-items: center; text-align: center;">
+                <span style="flex-grow: 1; border-bottom: 1px solid #eee; margin-right: 10px;"></span>
+                OR
+                <span style="flex-grow: 1; border-bottom: 1px solid #eee; margin-left: 10px;"></span>
+            </div>
+
+            <div class="text-center">
+                <a href="{{ url_for('index') }}" class="btn btn-light rounded-pill w-100 py-3 fw-bold border">
+                    <i data-lucide="home" class="me-2 text-primary" size="18"></i> Back to Home
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="text-center mt-4 text-white opacity-75 small">
+        <i data-lucide="lock" size="14" class="me-1"></i> SSL Encryption Layer 5 Active
+    </div>
+    </div>
+</div>
+{% endblock %}
